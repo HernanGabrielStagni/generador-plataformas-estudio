@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generador Universal de Plataformas de Estudio</title>
+  <style>
+    :root {
+      --bg: #1e293b;
+      --panel: #f8fafc;
+      --primary: #334155;
+      --primary-deep: #0f172a;
+      --accent: #6366f1;
+      --accent-dark: #4338ca;
+      --accent-soft: #e0e7ff;
+      --border: #cbd5e1;
+      --ink: #1e293b;
+      --muted: #64748b;
+      --ok: #16a34a;
+      --warn-bg: #fefce8;
+      --warn-border: #eab308;
+      --warn-ink: #854d0e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px 16px;
+      color: var(--ink);
+    }
+    .header { text-align: center; color: #f1f5f9; margin-bottom: 20px; }
+    .header h1 { font-size: 1.4rem; color: #a5b4fc; margin-bottom: 4px; }
+    .header p { font-size: 0.85rem; opacity: 0.65; font-family: sans-serif; }
+
+    .resume-banner {
+      background: var(--accent-soft); border: 1.5px solid var(--accent);
+      border-radius: 10px; padding: 10px 16px; margin-bottom: 14px;
+      font-family: sans-serif; font-size: 0.85rem; color: var(--accent-dark);
+      display: flex; align-items: center; gap: 12px; max-width: 760px; width: 100%;
+    }
+    .resume-banner button {
+      background: none; border: 1.5px solid var(--accent-dark); color: var(--accent-dark);
+      border-radius: 6px; padding: 4px 12px; cursor: pointer; font-size: 0.78rem;
+      font-family: sans-serif; white-space: nowrap;
+    }
+
+    .wizard {
+      background: var(--panel); border-radius: 18px;
+      width: 100%; max-width: 760px; overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.45);
+    }
+    .progress { background: var(--primary); padding: 14px 20px; display: flex; align-items: center; gap: 10px; }
+    .step-dots { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
+    .dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.18);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; color: white; font-family: sans-serif;
+      font-weight: bold; cursor: default; transition: all 0.2s; flex-shrink: 0;
+    }
+    .dot.active { background: var(--accent); color: white; }
+    .dot.done { background: rgba(255,255,255,0.45); cursor: pointer; }
+    .prog-label { color: #f1f5f9; font-family: sans-serif; font-size: 0.78rem; white-space: nowrap; }
+
+    .content { padding: 28px 28px 20px; }
+    .step-head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+    .step-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--primary-deep); color: #a5b4fc;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: bold; font-family: sans-serif;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-head h2 { font-size: 1.2rem; color: var(--ink); line-height: 1.3; margin-bottom: 3px; }
+    .step-sub { font-size: 0.8rem; color: var(--accent-dark); font-family: sans-serif; font-style: italic; }
+
+    p.inst { font-family: sans-serif; font-size: 0.9rem; color: #444; line-height: 1.6; margin-bottom: 14px; }
+
+    label.fld {
+      display: block; font-family: sans-serif; font-size: 0.78rem; font-weight: 600;
+      color: var(--primary); margin: 14px 0 5px; text-transform: uppercase; letter-spacing: .05em;
+    }
+    label.fld .opt { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); }
+    input.txt, textarea.txt {
+      width: 100%; box-sizing: border-box; padding: 10px 14px;
+      border: 2px solid var(--border); border-radius: 8px;
+      font-family: sans-serif; font-size: 0.88rem; background: #fff; color: var(--ink); outline: none;
+    }
+    input.txt:focus, textarea.txt:focus { border-color: var(--accent); }
+    input.txt.mono { font-family: monospace; font-size: 0.82rem; }
+    .hint { margin-top: 5px; font-family: sans-serif; font-size: 0.76rem; color: #94a3b8; line-height: 1.5; }
+    .hint strong { color: var(--accent-dark); }
+
+    .cards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+    .card {
+      border: 2px solid var(--border); border-radius: 10px;
+      padding: 9px 14px; cursor: pointer; background: #fff;
+      font-family: sans-serif; font-size: 0.85rem; color: var(--ink);
+      transition: all 0.12s; user-select: none;
+    }
+    .card:hover { border-color: var(--accent); }
+    .card.sel { border-color: var(--accent); background: var(--accent-soft); font-weight: 600; color: var(--accent-dark); }
+
+    .style-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin-bottom: 8px; }
+    .style-card {
+      border: 2px solid var(--border); border-radius: 12px; padding: 12px 14px;
+      cursor: pointer; background: #fff; transition: all 0.12s;
+    }
+    .style-card:hover { border-color: var(--accent); }
+    .style-card.sel { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+    .style-card h5 { font-family: sans-serif; font-size: 0.88rem; color: var(--ink); margin-bottom: 6px; }
+    .swatches { display: flex; gap: 4px; margin-bottom: 7px; }
+    .sw { width: 22px; height: 22px; border-radius: 5px; border: 1px solid rgba(0,0,0,0.15); }
+    .style-card p { font-family: sans-serif; font-size: 0.73rem; color: var(--muted); line-height: 1.45; }
+
+    .mat-block {
+      border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 14px 16px; margin-bottom: 12px; background: #fff;
+    }
+    .mat-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .mat-head h4 { font-family: sans-serif; font-size: 0.92rem; color: var(--ink); }
+    .stepper { display: flex; align-items: center; gap: 8px; }
+    .stepper button {
+      width: 30px; height: 30px; border-radius: 8px; border: 2px solid var(--accent);
+      background: #fff; color: var(--accent-dark); font-size: 1.05rem; font-weight: bold;
+      cursor: pointer; font-family: sans-serif; line-height: 1;
+    }
+    .stepper button:disabled { opacity: 0.3; cursor: default; }
+    .stepper .qty {
+      min-width: 30px; text-align: center; font-family: sans-serif;
+      font-size: 1.05rem; font-weight: bold; color: var(--ink);
+    }
+    .obj-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+    .obj-row .tag {
+      background: var(--primary-deep); color: #a5b4fc; font-family: monospace;
+      font-size: 0.72rem; padding: 3px 8px; border-radius: 5px; white-space: nowrap; flex-shrink: 0;
+    }
+    .obj-row input.txt { flex: 1; min-width: 160px; padding: 7px 11px; font-size: 0.82rem; }
+    .obj-row input.txt:disabled { background: #f1f5f9; color: #94a3b8; }
+    .ia-chk {
+      display: flex; align-items: center; gap: 5px; font-family: sans-serif;
+      font-size: 0.76rem; color: var(--accent-dark); cursor: pointer; white-space: nowrap; user-select: none;
+    }
+    .ia-chk input { accent-color: var(--accent); cursor: pointer; }
+
+    .tog-row {
+      display: flex; align-items: center; gap: 8px; font-family: sans-serif;
+      font-size: 0.87rem; color: var(--ink); padding: 7px 0; cursor: pointer; user-select: none;
+    }
+    .tog-row input { accent-color: var(--accent); width: 17px; height: 17px; cursor: pointer; }
+
+    ul.ck { list-style: none; margin-bottom: 14px; }
+    ul.ck li {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 0; border-bottom: 1px solid #e2e8f0;
+      font-family: sans-serif; font-size: 0.87rem; color: #333;
+      cursor: pointer; line-height: 1.4;
+    }
+    ul.ck li:last-child { border-bottom: none; }
+    .cb {
+      width: 20px; height: 20px; border: 2px solid var(--accent);
+      border-radius: 4px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 1px; transition: all 0.15s;
+    }
+    ul.ck li.chk .cb { background: var(--accent); border-color: var(--accent); }
+    ul.ck li.chk .cb::after { content: '✓'; color: white; font-size: 11px; }
+    ul.ck li.chk .cl { text-decoration: line-through; color: #aaa; }
+    .badge {
+      display: inline-block; background: var(--primary-deep); color: #a5b4fc;
+      font-family: monospace; font-size: 0.74rem;
+      padding: 2px 7px; border-radius: 4px; margin: 0 2px;
+    }
+    .ck-counter {
+      font-family: sans-serif; font-size: 0.78rem; color: var(--accent-dark);
+      font-weight: 600; margin: -6px 0 14px; text-align: right;
+    }
+    .ck-counter.done { color: var(--ok); }
+
+    .pbox {
+      background: var(--primary-deep); border-radius: 10px;
+      padding: 14px 14px 14px 16px; margin-bottom: 12px; position: relative;
+    }
+    .pbox pre {
+      color: #e2e8f0; font-family: monospace; font-size: 0.76rem;
+      line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+      max-height: 300px; overflow-y: auto; padding-right: 60px;
+    }
+    .cpbtn {
+      position: absolute; top: 10px; right: 10px;
+      background: var(--accent); color: white;
+      border: none; border-radius: 6px; padding: 5px 12px;
+      font-size: 0.78rem; font-weight: bold; cursor: pointer; font-family: sans-serif;
+    }
+    .cpbtn:hover { background: var(--accent-dark); }
+    .cpbtn.ok { background: var(--ok); }
+
+    .hl {
+      background: white; border: 1.5px solid var(--accent);
+      border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;
+    }
+    .hl h4 {
+      font-family: sans-serif; font-size: 0.73rem;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--accent-dark); margin-bottom: 7px;
+    }
+    .hl p, .hl ul, .hl ol {
+      font-family: sans-serif; font-size: 0.86rem; color: #555; line-height: 1.7;
+    }
+    .hl ul, .hl ol { padding-left: 18px; }
+    .hl code { background: #eef2ff; padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
+
+    .warn {
+      background: var(--warn-bg); border: 2px solid var(--warn-border);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+      font-family: sans-serif; font-size: 0.86rem; color: var(--warn-ink); line-height: 1.5;
+    }
+    .warn strong { display: block; margin-bottom: 3px; }
+    .warn code { background: #fef9c3; padding: 1px 5px; border-radius: 3px; font-size: 0.8rem; }
+    .warn ul { margin: 8px 0 0 18px; line-height: 1.6; }
+
+    .ftree {
+      background: var(--primary-deep); border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 14px; overflow-x: auto;
+    }
+    .ftree pre { color: #e2e8f0; font-family: monospace; font-size: 0.78rem; line-height: 1.65; }
+    .gold { color: #a5b4fc; }
+
+    .darkbox { background: var(--primary-deep); border-radius: 12px; padding: 16px 18px; margin-bottom: 14px; }
+    .darkbox .db-title {
+      color: #a5b4fc; font-family: sans-serif; font-size: 0.8rem; font-weight: bold;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+    }
+    .darkbox p { color: #e2e8f0; font-family: sans-serif; font-size: 0.87rem; line-height: 1.6; margin-bottom: 10px; }
+    .darkbox p:last-child { margin-bottom: 0; }
+    .darkbox .pill-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .darkbox .pill {
+      background: var(--accent); color: white; font-family: sans-serif; font-size: 0.76rem;
+      font-weight: bold; padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+    }
+    .darkbox .mono { color: #e2e8f0; font-family: monospace; font-size: 0.8rem; }
+
+    .nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; gap: 10px; }
+    .btn-back {
+      background: none; border: 2px solid #bbb; color: #777;
+      padding: 10px 18px; border-radius: 8px; cursor: pointer;
+      font-family: sans-serif; font-size: 0.88rem;
+    }
+    .btn-next {
+      background: var(--primary-deep); border: none; color: #a5b4fc;
+      padding: 12px 24px; border-radius: 8px; cursor: pointer;
+      font-family: sans-serif; font-size: 0.92rem; font-weight: bold;
+      flex: 1; max-width: 290px;
+    }
+    .btn-next:hover { background: var(--primary); }
+    .btn-next:disabled { background: #ccc; color: #888; cursor: not-allowed; }
+    .btn-next:disabled:hover { background: #ccc; }
+
+    .step-pdf {
+      background: white; border: 2px solid var(--accent);
+      border-radius: 12px; padding: 18px 20px; margin-bottom: 14px;
+    }
+    .step-pdf h4 {
+      font-family: sans-serif; font-size: 0.8rem; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--accent-dark); margin-bottom: 10px;
+    }
+    .step-pdf ol {
+      font-family: sans-serif; font-size: 0.9rem; color: #333;
+      line-height: 1.8; padding-left: 20px;
+    }
+    .step-pdf .nombre-archivo {
+      display: inline-block; margin-top: 10px;
+      background: var(--primary-deep); color: #a5b4fc;
+      font-family: monospace; font-size: 0.85rem;
+      padding: 5px 14px; border-radius: 6px;
+    }
+    .greenbox {
+      background: #eef2ff; border: 2px solid var(--accent); border-radius: 10px;
+      padding: 14px 18px; margin-bottom: 18px; font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📚 Generador Universal de Plataformas de Estudio</h1>
+  <p>De cualquier PDF a una plataforma web de estudio · con NotebookLM + Claude Code</p>
+</div>
+
+<div id="resumeSlot"></div>
+
+<div class="wizard">
+  <div class="progress">
+    <div class="step-dots" id="dots"></div>
+    <div class="prog-label" id="progLbl"></div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════ ESTADO ═══════════════════════════════
+const LS_KEY = 'genUniversal_v1';
+const TOTAL = 9;
+
+function defaultState() {
+  return {
+    step: 0,
+    proyecto: { titulo:'', marca:'', logoFile:'', slug:'', slugTouched:false, carpeta:'', githubUser:'HernanGabrielStagni' },
+    perfil: { audiencia:'publico', audienciaOtro:'', nivel:'basico', tipoTexto:'manual', tipoTextoOtro:'' },
+    estetica: { estiloId:'minimalista', custom: { colores:['#1f2937','#374151','#d97706','#f9fafb'], descripcion:'', tipografia:'' } },
+    materiales: {
+      videos:         [ {objetivo:'', ia:true}, {objetivo:'', ia:true}, {objetivo:'', ia:true} ],
+      infografias:    [ {objetivo:'', ia:true}, {objetivo:'', ia:true}, {objetivo:'', ia:true} ],
+      presentaciones: [ {objetivo:'', ia:true}, {objetivo:'', ia:true} ],
+      audios:         [ {objetivo:'', ia:true} ],
+      resumenDetallado: true,
+      resumenCondensado: false,
+      quiz: { incluir:true, cantidad:10 }
+    },
+    modeloPath: '',
+    checks: {}
+  };
+}
+
+let state = defaultState();
+let resumedFromStorage = false;
+try {
+  const raw = localStorage.getItem(LS_KEY);
+  if (raw) {
+    const saved = JSON.parse(raw);
+    state = { ...defaultState(), ...saved,
+      proyecto: { ...defaultState().proyecto, ...(saved.proyecto||{}) },
+      perfil: { ...defaultState().perfil, ...(saved.perfil||{}) },
+      estetica: { ...defaultState().estetica, ...(saved.estetica||{}),
+                  custom: { ...defaultState().estetica.custom, ...((saved.estetica||{}).custom||{}) } },
+      materiales: { ...defaultState().materiales, ...(saved.materiales||{}),
+                    quiz: { ...defaultState().materiales.quiz, ...((saved.materiales||{}).quiz||{}) } },
+      checks: saved.checks || {}
+    };
+    if (state.step > 0) resumedFromStorage = true;
+  }
+} catch(e) {}
+
+function save() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e) {} }
+
+function restart() {
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+  state = defaultState();
+  resumedFromStorage = false;
+  document.getElementById('resumeSlot').innerHTML = '';
+  render();
+  window.scrollTo({ top: 0 });
+}
+
+// ═══════════════════════════════ CONSTANTES ═══════════════════════════════
+const ESTILOS = {
+  corporativo: {
+    nombre: 'Corporativo profesional',
+    colores: ['#1e3a5f', '#2e5984', '#c8973e', '#f4f6f8'],
+    descripcion: 'Estilo corporativo sobrio y confiable: azul marino profundo con acentos dorado-ocre, formas geométricas limpias, gradientes sutiles, iconografía de línea fina, mucho orden y jerarquía visual. Sin ornamentos.',
+    tipografia: 'Sans-serif moderna (tipo Inter), títulos en peso semibold'
+  },
+  tech: {
+    nombre: 'Tech / Futurista',
+    colores: ['#0f172a', '#38bdf8', '#8b5cf6', '#e2e8f0'],
+    descripcion: 'Estilo tecnológico futurista: fondo azul noche casi negro, acentos cian eléctrico y violeta, líneas de circuito y retículas sutiles, brillos tipo neón suaves, sensación de interfaz de ciencia ficción elegante, nunca recargada.',
+    tipografia: 'Sans-serif geométrica; monoespaciada para datos y código'
+  },
+  acuarela: {
+    nombre: 'Acuarela espiritual',
+    colores: ['#5b4a6f', '#c98ba3', '#cbb27a', '#f7f0e8'],
+    descripcion: 'Estilo acuarela espiritual: lavandas, rosas empolvados y dorado suave sobre crema, trazos difuminados de pincel, luz cálida, transiciones etéreas, sensación contemplativa y serena. Texto calado sobre el arte, sin cajas blancas.',
+    tipografia: 'Serif elegante (tipo Playfair Display) para títulos'
+  },
+  botanico: {
+    nombre: 'Botánico / Enciclopédico',
+    colores: ['#2f4f3e', '#5c7a5a', '#b0714f', '#f3ecdd'],
+    descripcion: 'Estilo lámina de enciclopedia botánica antigua: verdes profundos y terracota sobre papel crema envejecido, ilustraciones a tinta y acuarela de plantas y elementos naturales, numeración y rótulos de lámina científica, aire refinado y erudito.',
+    tipografia: 'Serif clásica de libro; versalitas para rótulos'
+  },
+  minimalista: {
+    nombre: 'Minimalista',
+    colores: ['#111827', '#4b5563', '#e05d38', '#fafafa'],
+    descripcion: 'Estilo minimalista contemporáneo: máximo espacio en blanco, blanco y negro con un único acento cálido, tipografía protagonista de gran tamaño, líneas finas, cero decoración. La claridad ES el diseño.',
+    tipografia: 'Sans-serif neutra; contraste solo por tamaño y peso'
+  },
+  editorial: {
+    nombre: 'Editorial clásico',
+    colores: ['#6d1f2c', '#1f3251', '#a8873c', '#efe6d5'],
+    descripcion: 'Estilo editorial de libro clásico: burdeos y azul tinta sobre crema, ornamentos tipográficos, capitulares, filetes y grabados en línea, composición simétrica de página impresa fina, aire literario atemporal.',
+    tipografia: 'Serif de edición (tipo Garamond o Baskerville)'
+  }
+};
+
+const AUDIENCIAS = { terapeutas:'Terapeutas', profesionales:'Profesionales de un área', publico:'Público general', estudiantes:'Estudiantes', otro:'Otro…' };
+const NIVELES = { nulo:'Sin conocimientos previos', basico:'Nivel básico', experiencia:'Con experiencia en el tema' };
+const TIPOS = { manual:'Manual / Curso', tecnico:'Texto técnico', academico:'Texto académico', espiritual:'Texto espiritual', novela:'Novela / Literatura', otro:'Otro…' };
+
+const ROL = {
+  manual: 'diseñador instruccional experto',
+  tecnico: 'experto técnico y divulgador claro',
+  academico: 'docente universitario experto en el tema',
+  espiritual: 'guía experimentado en la tradición del texto, con tono respetuoso y profundo',
+  novela: 'crítico literario y profesor de literatura',
+  otro: 'experto en el tema del texto'
+};
+
+const TONO_NIVEL = {
+  nulo: 'Explicá todo desde cero, sin jerga sin definir; usá analogías cotidianas.',
+  basico: 'Podés asumir vocabulario general del área; definí lo específico.',
+  experiencia: 'Andá directo a lo sustancial; profundizá matices, casos límite y aplicaciones.'
+};
+
+const TONO_TIPO = {
+  manual: 'Precisión conceptual con ejemplos aplicados y pasos accionables.',
+  tecnico: 'Precisión técnica rigurosa, con ejemplos y casos de uso reales.',
+  academico: 'Rigor académico, fiel a las ideas centrales del texto.',
+  espiritual: 'Tono cálido y contemplativo; respetá el vocabulario propio del texto.',
+  novela: 'Enfocate en trama, personajes, temas y símbolos, cuidando el goce lector.',
+  otro: 'Adaptá el tono al carácter propio del texto.'
+};
+
+const ANALISIS_POR_TIPO = {
+  novela: ['Personajes: descripción, arco y relaciones', 'Escenas y capítulos clave', 'Temas y símbolos', 'Citas textuales significativas', 'Contexto y estructura narrativa'],
+  tecnico: ['Conceptos clave con definición', 'Procedimientos y pasos', 'Fórmulas, mecanismos y protocolos', 'Ejemplos y casos de uso', 'Errores comunes y buenas prácticas'],
+  academico: ['Conceptos clave con definición', 'Argumentos centrales y evidencia', 'Autores y corrientes citados', 'Ejemplos y casos del texto', 'Debates o preguntas abiertas'],
+  espiritual: ['Conceptos y enseñanzas con explicación', 'Prácticas, ejercicios y meditaciones', 'Citas textuales significativas', 'Historias y parábolas del texto', 'Aplicaciones a la vida cotidiana'],
+  manual: ['Conceptos clave con definición', 'Técnicas y procedimientos (nombre + descripción)', 'Mecanismos, protocolos y pasos', 'Casos y ejemplos del texto', 'Errores comunes y recomendaciones'],
+  otro: ['Conceptos clave con definición', 'Ideas y procesos principales', 'Ejemplos y casos del texto', 'Citas o pasajes significativos']
+};
+
+const FOCO_QUIZ = {
+  novela: 'de comprensión lectora: trama, personajes, motivaciones y temas',
+  tecnico: 'de conceptos, definiciones y aplicación práctica',
+  academico: 'de conceptos, argumentos y comprensión crítica',
+  espiritual: 'de comprensión de conceptos y prácticas, sin trivializar el contenido',
+  manual: 'de conceptos y procedimientos del material',
+  otro: 'de comprensión de las ideas principales del texto'
+};
+
+// ═══════════════════════════════ HELPERS ═══════════════════════════════
+function slugify(t) {
+  return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0, 40);
+}
+function estiloActivo() {
+  if (state.estetica.estiloId === 'custom') {
+    const c = state.estetica.custom;
+    return { nombre: 'Personalizado', colores: c.colores,
+             descripcion: c.descripcion || 'Estilo definido por el usuario',
+             tipografia: c.tipografia || 'A criterio del diseñador' };
+  }
+  return ESTILOS[state.estetica.estiloId];
+}
+function audLabel() { return state.perfil.audiencia === 'otro' ? (state.perfil.audienciaOtro || 'otro público') : AUDIENCIAS[state.perfil.audiencia]; }
+function tipoLabel() { return state.perfil.tipoTexto === 'otro' ? (state.perfil.tipoTextoOtro || 'otro tipo de texto') : TIPOS[state.perfil.tipoTexto]; }
+function tipoKey() { return state.perfil.tipoTexto === 'otro' ? 'otro' : state.perfil.tipoTexto; }
+function cants() {
+  const m = state.materiales;
+  return { v: m.videos.length, i: m.infografias.length, p: m.presentaciones.length, a: m.audios.length };
+}
+function totalHerr() { const c = cants(); return c.v + c.i + c.p + c.a + 1; }
+function objTxt(item, generico) { return item.ia ? generico : ('"' + item.objetivo.trim() + '"'); }
+function esc(s) { return s.replace(/</g,'&lt;'); }
+
+// Setters (llamados desde oninput/onclick de los pasos)
+function setProy(k, val) {
+  state.proyecto[k] = val;
+  if (k === 'titulo' && !state.proyecto.slugTouched) {
+    state.proyecto.slug = slugify(val);
+    const s = document.getElementById('f-slug');
+    if (s) s.value = state.proyecto.slug;
+  }
+  if (k === 'slug') state.proyecto.slugTouched = true;
+  save();
+}
+function pick(sec, k, val) { state[sec][k] = val; save(); render(); }
+function setPerfil(k, val) { state.perfil[k] = val; save(); }
+function pickEstilo(id) { state.estetica.estiloId = id; save(); render(); }
+function setCustom(i, val) { state.estetica.custom.colores[i] = val; save(); }
+function setCustomTxt(k, val) { state.estetica.custom[k] = val; save(); }
+function cant(tipo, delta) {
+  const arr = state.materiales[tipo];
+  const max = tipo === 'audios' ? 3 : 5;
+  const n = arr.length + delta;
+  if (n < 0 || n > max) return;
+  if (delta > 0) arr.push({objetivo:'', ia:true});
+  else arr.pop();
+  save(); render();
+}
+function setObj(tipo, i, val) { state.materiales[tipo][i].objetivo = val; save(); }
+function iaTog(tipo, i, checked) { state.materiales[tipo][i].ia = checked; save(); render(); }
+function setMat(k, val) { state.materiales[k] = val; save(); render(); }
+function quizTog(val) { state.materiales.quiz.incluir = val; save(); render(); }
+function quizCant(delta) {
+  const q = state.materiales.quiz;
+  const n = q.cantidad + delta;
+  if (n < 5 || n > 20) return;
+  q.cantidad = n; save(); render();
+}
+function setModelo(val) { state.modeloPath = val.trim().replace(/[\\/]+$/, ''); save(); }
+
+// ═══════════════════════════════ CHECKLIST + NAV (portado del wizard original) ═══════════════════════════════
+function cp(text, id) {
+  navigator.clipboard.writeText(text).then(() => {
+    const b = document.getElementById(id);
+    const orig = b.textContent;
+    b.textContent = '✓ Copiado'; b.classList.add('ok');
+    setTimeout(() => { b.textContent = orig; b.classList.remove('ok'); }, 2200);
+  });
+}
+function tog(el) {
+  el.classList.toggle('chk');
+  const key = el.dataset.key;
+  if (key) { state.checks[key] = el.classList.contains('chk'); save(); }
+  updateNavState();
+}
+function ckLi(key, html) {
+  const on = state.checks[key] ? ' chk' : '';
+  return `<li data-key="${key}" onclick="tog(this)" class="${on}"><div class="cb"></div><span class="cl">${html}</span></li>`;
+}
+function updateNavState() {
+  const btn = document.getElementById('btnNext');
+  const counter = document.getElementById('ckCounter');
+  if (!btn) return;
+  const items = document.querySelectorAll('#content ul.ck li');
+  if (items.length === 0) {
+    btn.disabled = false;
+    if (counter) counter.style.display = 'none';
+    return;
+  }
+  const total = items.length;
+  const checked = document.querySelectorAll('#content ul.ck li.chk').length;
+  btn.disabled = checked < total;
+  if (counter) {
+    counter.style.display = '';
+    counter.textContent = checked < total
+      ? `☐ Marcá los ítems para continuar (${checked}/${total})`
+      : `✓ Todo listo (${total}/${total})`;
+    counter.classList.toggle('done', checked >= total);
+  }
+}
+function nav(label) {
+  return `<div class="ck-counter" id="ckCounter" style="display:none"></div>
+  <div class="nav">
+    ${state.step > 0 ? `<button class="btn-back" onclick="go(-1)">← Atrás</button>` : '<div></div>'}
+    <button class="btn-next" id="btnNext" onclick="go(1)">${label || 'Siguiente →'}</button>
+  </div>`;
+}
+function go(d) {
+  if (d === 1) {
+    const btn = document.getElementById('btnNext');
+    if (btn && btn.disabled) return;
+    if (!validar(state.step)) return;
+  }
+  state.step = Math.max(0, Math.min(TOTAL - 1, state.step + d));
+  save();
+  render();
+  window.scrollTo({ top: 0 });
+}
+function validar(paso) {
+  if (paso === 0) {
+    const p = state.proyecto;
+    if (!p.titulo.trim()) { alert('Ingresá el título del curso o libro.'); return false; }
+    if (!p.marca.trim()) { alert('Ingresá el nombre de tu empresa o marca.'); return false; }
+    if (!p.slug.trim()) { alert('El identificador corto no puede quedar vacío.'); return false; }
+    if (!p.carpeta.trim()) { alert('Pegá la ruta de la carpeta del proyecto.'); return false; }
+    p.slug = slugify(p.slug);
+    p.carpeta = p.carpeta.trim().replace(/[\\/]+$/, '') + '\\';
+    if (!p.githubUser.trim()) p.githubUser = 'HernanGabrielStagni';
+    save();
+  }
+  if (paso === 1) {
+    if (state.perfil.audiencia === 'otro' && !state.perfil.audienciaOtro.trim()) { alert('Describí a quién va dirigida la plataforma.'); return false; }
+    if (state.perfil.tipoTexto === 'otro' && !state.perfil.tipoTextoOtro.trim()) { alert('Describí qué tipo de texto es.'); return false; }
+  }
+  if (paso === 2) {
+    if (state.estetica.estiloId === 'custom' && !state.estetica.custom.descripcion.trim()) {
+      alert('Describí el estilo visual personalizado (como se lo dirías a un ilustrador).'); return false;
+    }
+  }
+  if (paso === 3) {
+    const c = cants();
+    if (c.v + c.i + c.p + c.a === 0 && !state.materiales.resumenDetallado && !state.materiales.resumenCondensado) {
+      alert('Elegí al menos un material para generar.'); return false;
+    }
+    for (const [tipo, nombre] of [['videos','video'],['infografias','infografía'],['presentaciones','presentación'],['audios','audio']]) {
+      for (let k = 0; k < state.materiales[tipo].length; k++) {
+        const it = state.materiales[tipo][k];
+        if (!it.ia && !it.objetivo.trim()) {
+          alert(`Al ${nombre} ${k+1} le falta el objetivo: escribilo o tildá "Que lo decida la IA".`); return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+// ═══════════════════════════════ GENERADORES ═══════════════════════════════
+function buildMaestro() {
+  const p = state.proyecto, tk = tipoKey(), c = cants(), m = state.materiales;
+  const est = estiloActivo();
+  const partes = [];
+  const herrDesc = [];
+  if (c.v) herrDesc.push(`${c.v} video${c.v>1?'s':''}`);
+  if (c.i) herrDesc.push(`${c.i} infografía${c.i>1?'s':''}`);
+  if (c.p) herrDesc.push(`${c.p} ${c.p>1?'presentaciones':'presentación'}`);
+  if (c.a) herrDesc.push(`${c.a} audio${c.a>1?'s':''}`);
+  herrDesc.push('1 informe');
+
+  // 1. Rol + audiencia
+  partes.push(`Actuá como ${ROL[tk]} creando material de estudio a partir del texto "${p.titulo}" para la marca ${p.marca}.
+Procesá el texto de forma exhaustiva siguiendo su jerarquía interna real.
+
+AUDIENCIA: ${audLabel()}. Nivel previo: ${NIVELES[state.perfil.nivel]}.
+${TONO_NIVEL[state.perfil.nivel]}
+${TONO_TIPO[tk]}`);
+
+  // 2. Ejecución inmediata
+  partes.push(`EJECUTA MANUALMENTE E INMEDIATAMENTE, en este mismo turno y de forma
+asincrónica, las ${totalHerr()} herramientas de creación de artefactos
+(${herrDesc.join(', ')}). No esperes mi confirmación:
+activá los llamados a las herramientas ya, para que empiecen a
+procesarse en el Panel de Studio de inmediato.`);
+
+  // 3. FASE 0
+  let f0 = `FASE 0 — DATOS ESTRUCTURADOS PARA CÓDIGO DE PLATAFORMA
+Genera exactamente en este formato sin alterarlo:
+
+INICIO:
+titulo: "${p.titulo}"
+subtitulo: "..."
+descripcion: "..." (2-3 oraciones)
+conceptos_clave: ["...", "...", "...", "...", "..."]`;
+
+  const bloque = (tipo, pref, arr, generico) => {
+    let out = '';
+    arr.forEach((it, k) => {
+      const n = k + 1;
+      out += `\n\n${pref}_${n} ${it.ia ? '(proponé vos el enfoque según la jerarquía del texto)' : `(enfoque pedido: "${it.objetivo.trim()}")`}:
+${pref}_${n}_titulo: "..."
+${pref}_${n}_subtitulo: "..."
+${pref}_${n}_descripcion: "..."
+${pref}_${n}_conceptos: ["...", "...", "...", "..."]`;
+    });
+    return out;
+  };
+  if (c.v) f0 += '\n\nVIDEOS — agrupá el contenido en ' + c.v + ' bloque' + (c.v>1?'s':'') + ' temático' + (c.v>1?'s':'') + ':' + bloque('videos','video',m.videos);
+  if (c.i) f0 += '\n\nINFOGRAFÍAS:' + bloque('infografias','infografia',m.infografias);
+  if (c.p) f0 += '\n\nPRESENTACIONES:' + bloque('presentaciones','presentacion',m.presentaciones);
+  if (c.a) f0 += '\n\nAUDIOS:' + bloque('audios','audio',m.audios);
+  f0 += `\n\nDOCUMENTOS:
+doc_1_titulo: "Guía de Estudio Maestra · ${p.titulo}"
+doc_1_descripcion: "..."
+doc_1_indicaciones: ["...", "...", "...", "..."]
+doc_2_titulo: "Texto fuente original"
+doc_2_descripcion: "..."
+doc_2_indicaciones: ["...", "...", "...", "..."]`;
+  if (m.resumenDetallado) f0 += `\n\nRESUMEN_GENERAL (detallado):
+intro: "..."
+puntos_clave: ["...", "...", "...", "...", "...", "...", "..."]
+frase_cierre: "..."`;
+  if (m.resumenCondensado) f0 += `\n\nRESUMEN_CONDENSADO (súper condensado y pedagógico):
+maximo 10 puntos, lenguaje llano, pensado para repaso final:
+puntos: ["...", "...", "..."]
+frase_final: "..."`;
+  partes.push(f0);
+
+  // 4. FASE 1
+  partes.push(`FASE 1 — ANÁLISIS JERÁRQUICO
+Analizá cada sección o capítulo del texto e identificá su título y foco.
+Para cada una extraé:
+${ANALISIS_POR_TIPO[tk].map(x => '• ' + x).join('\n')}`);
+
+  // 5. FASE 2
+  let f2 = `FASE 2 — DISEÑO (INVIOLABLE, aplica a todos los entregables)
+• Estilo visual: ${est.descripcion}
+• Paleta: ${est.colores.join(' · ')}
+• Tipografía: ${est.tipografia}`;
+  if (p.logoFile.trim()) f2 += `\n• Logo '${p.logoFile.trim()}': sello discreto en esquina inferior derecha.
+  PROHIBIDO inventar versiones o ubicarlo en otro lugar.`;
+  f2 += `\n• Texto calado sobre el arte. PROHIBIDO recuadros o cajas blancas de texto.
+• Fondos: ilustración/composición continua. PROHIBIDO pantallas blancas lisas con texto.`;
+  partes.push(f2);
+
+  // 6. FASE 3
+  const descCorta = est.descripcion.length > 180 ? est.descripcion.slice(0, 180) + '…' : est.descripcion;
+  let f3 = `FASE 3 — ENTREGABLES (ejecutar las ${totalHerr()} herramientas ya, en paralelo)`;
+  let idx = 0;
+  if (c.v) {
+    idx++;
+    f3 += `\n\n${idx}) VIDEO (herramienta "Resumen en video") × ${c.v}:
+  Formato: Explicación · Idioma: español (Latinoamérica)
+  Estilo visual: Personalizado
+  Descripción: "${descCorta} · ${p.titulo} · ${p.marca}"`;
+    m.videos.forEach((it, k) => { f3 += `\n  Video ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
+  }
+  if (c.i) {
+    idx++;
+    f3 += `\n\n${idx}) INFOGRAFÍA (herramienta "Infografía") × ${c.i}:
+  Idioma: español · Vertical · Editorial · Detallado
+  Descripción: "${descCorta} · ${p.marca}"`;
+    m.infografias.forEach((it, k) => { f3 += `\n  Infografía ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
+  }
+  if (c.p) {
+    idx++;
+    f3 += `\n\n${idx}) PRESENTACIÓN (herramienta "Presentación con...") × ${c.p}:
+  Cada una: Presentación detallada · español (Latinoamérica)
+  Descripción: "${descCorta} · ${p.marca}"`;
+    const todasIA = m.presentaciones.every(x => x.ia);
+    if (todasIA && c.p > 1) {
+      f3 += `\n  Generá ${c.p} presentaciones separadas repartiendo el contenido del texto
+  en partes iguales: Parte 1/${c.p} … Parte ${c.p}/${c.p} (continuación).`;
+    } else {
+      m.presentaciones.forEach((it, k) => { f3 += `\n  Presentación ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
+    }
+  }
+  if (c.a) {
+    idx++;
+    f3 += `\n\n${idx}) AUDIO (herramienta "Resumen en audio") × ${c.a}:
+  Podcast de 8-10 min cada uno.`;
+    m.audios.forEach((it, k) => { f3 += `\n  Audio ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
+  }
+  idx++;
+  f3 += `\n\n${idx}) GUÍA (herramienta "Informes"):
+  Reporte / guía de estudio exhaustiva con los puntos de la FASE 1.`;
+  partes.push(f3);
+
+  // 7. FASE 4 quiz
+  if (m.quiz.incluir) {
+    const claveLinea = Array.from({length: m.quiz.cantidad}, (_, k) => `${k+1}:x`).join('  ');
+    partes.push(`FASE 4 — CUESTIONARIO
+Creá ${m.quiz.cantidad} preguntas de opción múltiple (a/b/c/d, una sola correcta)
+${FOCO_QUIZ[tk]}. Dificultad acorde a: ${NIVELES[state.perfil.nivel].toLowerCase()}.
+Al final, en bloque separado y en una sola línea:
+CLAVE: ${claveLinea}`);
+  }
+
+  // 8. Regla de oro
+  partes.push(`REGLA DE ORO
+Tono adaptado a la audiencia indicada. Sin referencias a material externo al texto.
+El diseño debe respirar el estilo "${est.nombre}".`);
+
+  return partes.join('\n\n');
+}
+
+const PREF = {
+  videos: { pre: (k)=>`${k+1}-`, ext: '.mp4', icon: '🎬', nombre: 'Video' },
+  infografias: { pre: (k)=>`${k+1}-`, ext: '.png', icon: '🖼️', nombre: 'Infografía' },
+  presentaciones: { pre: (k)=>`P${k+1}-`, ext: '.pdf', icon: '📑', nombre: 'Presentación' },
+  audios: { pre: (k)=>`A${k+1}-`, ext: '.m4a', icon: '🎧', nombre: 'Audio' }
+};
+
+function fasesPdfName() { return `${state.proyecto.slug}-Fases_NotebookLM.pdf`; }
+
+function buildChecklistDescarga() {
+  const m = state.materiales;
+  let out = '';
+  for (const tipo of ['videos','infografias','presentaciones','audios']) {
+    const cfg = PREF[tipo];
+    m[tipo].forEach((it, k) => {
+      const obj = it.ia ? 'enfoque elegido por la IA' : it.objetivo.trim();
+      out += ckLi(`d-${tipo}-${k}`, `${cfg.icon} ${cfg.nombre} ${k+1} <span style="color:#94a3b8">(${obj})</span> — descargado con prefijo <span class="badge">${cfg.pre(k)}</span> <em style="color:#999;font-size:0.78rem">(${cfg.ext})</em>`);
+    });
+  }
+  out += ckLi('d-guia', `📘 Informe / Guía de estudio — nombre original de NotebookLM (.pdf)`);
+  out += ckLi('d-fases', `📋 <span class="badge">${fasesPdfName()}</span> — la respuesta de texto guardada como PDF (paso anterior)`);
+  out += ckLi('d-fuente', `📗 El PDF fuente original de "${state.proyecto.titulo}" — sin cambiar el nombre`);
+  if (state.proyecto.logoFile.trim()) {
+    out += ckLi('d-logo', `🏷️ El logo — <span class="badge">${state.proyecto.logoFile.trim()}</span>`);
+  }
+  return out;
+}
+
+function buildArbol() {
+  const p = state.proyecto, m = state.materiales;
+  let t = `${p.carpeta}\n│\n├── <span class="gold">materiales\\</span>\n│   ├── <span class="gold">${fasesPdfName()}</span>\n`;
+  for (const tipo of ['videos','infografias','presentaciones','audios']) {
+    const cfg = PREF[tipo];
+    m[tipo].forEach((it, k) => {
+      t += `│   ├── ${cfg.pre(k)}[nombre que ponga NotebookLM]${cfg.ext}\n`;
+    });
+  }
+  t += `│   ├── [guía de estudio].pdf\n│   ├── [PDF fuente original].pdf\n`;
+  if (p.logoFile.trim()) t += `│   └── ${p.logoFile.trim()}\n`;
+  else t = t.replace(/├── \[PDF fuente original\].pdf\n$/, '└── [PDF fuente original].pdf\n');
+  t += `│\n└── <span class="gold">plataforma-${p.slug}\\</span>        ← todavía NO existe — Claude la crea desde cero`;
+  return t;
+}
+
+function seccionesPlataforma() {
+  const c = cants(), m = state.materiales;
+  const s = ['Inicio (bienvenida, objetivos, mapa de contenidos' + (c.a ? ', reproductor de audio' : '') + ')'];
+  if (c.v) s.push(`Video Clases (${c.v} video${c.v>1?'s':''} con descripción y conceptos)`);
+  if (c.p) s.push(`Presentaciones (${c.p} PDF${c.p>1?'s':''} con visor)`);
+  if (c.i) s.push(`Infografías (${c.i} imagen${c.i>1?'es':''} con visor zoom/pan)`);
+  s.push('Documentos (guía de estudio + PDF fuente' + (c.a ? ` + ${c.a} audio${c.a>1?'s':''}` : '') + ')');
+  if (m.resumenDetallado || m.resumenCondensado) {
+    const variantes = [];
+    if (m.resumenDetallado) variantes.push('versión detallada');
+    if (m.resumenCondensado) variantes.push('versión súper condensada y pedagógica');
+    s.push(`Resumen General (${variantes.join(' + ')})`);
+  }
+  if (m.quiz.incluir) s.push(`Quiz (${m.quiz.cantidad} preguntas de opción múltiple con corrección automática usando la línea CLAVE)`);
+  s.push('Configuración');
+  return s;
+}
+
+function buildMensajeClaude() {
+  const p = state.proyecto, c = cants(), m = state.materiales, est = estiloActivo();
+  let msg = `Quiero crear la plataforma de estudio web de "${p.titulo}" para la marca ${p.marca}.
+
+CARPETA DEL PROYECTO:
+${p.carpeta}
+
+Dentro de esa carpeta encontrarás:
+- materiales\\ → contiene todos los archivos de contenido generados con NotebookLM
+- plataforma-${p.slug}\\ → aquí vas a crear la nueva plataforma (puede no existir aún)
+
+CONTEXTO DEL PÚBLICO (adaptá los microtextos de la interfaz a este público):
+- Audiencia: ${audLabel()}
+- Nivel previo: ${NIVELES[state.perfil.nivel]}
+- Tipo de texto fuente: ${tipoLabel()}
+
+El archivo ${fasesPdfName()} está en materiales\\ y contiene la respuesta completa
+de NotebookLM con la FASE 0 (datos estructurados de inicio${c.v ? `, ${c.v} videos` : ''}${c.i ? `, ${c.i} infografías` : ''}${c.p ? `, ${c.p} presentaciones` : ''}${c.a ? `, ${c.a} audios` : ''}, documentos${m.resumenDetallado || m.resumenCondensado ? ' y resumen/es' : ''})${m.quiz.incluir ? ` y las ${m.quiz.cantidad} preguntas del quiz con su línea CLAVE al final` : ''}. Leé ese archivo primero para extraer todos los textos.
+
+Los archivos de medios están en materiales\\ con esta convención de nombres:`;
+  if (c.v) msg += `\n- Los ${c.v} videos (.mp4) empiezan con prefijo 1-, 2-, ... → ese es su orden en la plataforma`;
+  if (c.i) msg += `\n- Las ${c.i} infografías (.png) también empiezan con prefijo 1-, 2-, ...`;
+  if (c.p) msg += `\n- Las ${c.p} presentaciones (.pdf) empiezan con prefijo P1-, P2-, ...`;
+  if (c.a) msg += `\n- Los ${c.a} audios (.m4a o .mp3) empiezan con prefijo A1-, A2-, ...`;
+  msg += `\n- La guía de estudio y el PDF fuente son los PDF sin prefijo (junto con ${fasesPdfName()})`;
+  if (p.logoFile.trim()) msg += `\n- El logo es ${p.logoFile.trim()}`;
+  msg += `\n\nListá los archivos de materiales\\, identificá cada uno, y usá sus nombres reales en el código.
+
+SECCIONES DE LA PLATAFORMA (solo estas — si un tipo de material tiene 0 unidades, esa sección NO debe existir ni aparecer en el menú):
+${seccionesPlataforma().map((s, k) => `${k+1}. ${s}`).join('\n')}
+
+MARCA Y ESTÉTICA:
+- Nombre de la marca: ${p.marca}
+- Título de la plataforma: ${p.titulo}${p.logoFile.trim() ? `\n- Logo: ${p.logoFile.trim()} (header y pantalla de intro)` : ''}
+- Paleta de colores: ${est.colores.join(' · ')}
+- Estilo visual: ${est.descripcion}
+- Tipografía: ${est.tipografia}
+`;
+
+  if (state.modeloPath) {
+    msg += `
+MODELO DE REFERENCIA (solo lectura — está en otra ubicación, NO lo modifiques ni lo copies tal cual):
+${state.modeloPath}\\
+
+Leé su código para entender la estructura, el diseño y cómo funciona la app,
+y replicá la app en plataforma-${p.slug}\\app\\ adaptando contenido, secciones y marca.
+IMPORTANTE — la marca del modelo está dispersa y hardcodeada en tailwind.config.js,
+src\\index.css y en clases inline de los componentes JSX. Al replicar, reemplazá TODOS
+esos lugares por la paleta y marca de este proyecto (buscá los colores hex del modelo
+en todo src\\ para no dejar restos). Aprovechá para centralizar los colores en CSS
+variables en index.css, así el próximo cambio de marca es trivial.
+`;
+  } else {
+    msg += `
+No hay app modelo: diseñá la plataforma desde cero con React + Vite + Tailwind.
+Requisitos de arquitectura:
+- Componentes: Header, Sidebar responsive (drawer en móvil), IntroScreen,
+  visor de PDF embebido y componente de Quiz con corrección automática.
+- TEMA CENTRALIZADO: definí toda la paleta como CSS variables en :root (index.css)
+  y hacé que Tailwind y los componentes las consuman — nada de colores hex sueltos en JSX.
+- Responsive completo (móvil primero), estética según el bloque de marca de arriba.
+- Los medios van en public\\media\\ y se referencian con un helper asset() que respete
+  el base de GitHub Pages.
+- El progreso de secciones se guarda en localStorage con prefijo ${p.slug}_.
+`;
+  }
+
+  msg += `
+Una vez que la plataforma funcione en local, publicala en GitHub Pages:
+1. Creá el repositorio público en GitHub: plataforma-${p.slug}
+2. Hacé el build: npm run build (dentro de plataforma-${p.slug}\\app\\)
+3. Para el deploy usá el método manual por las rutas largas de Windows:
+   - Cloná el repo vacío a C:\\tmp\\${p.slug.replace(/-/g,'').slice(0,10)}deploy
+   - Copiá el contenido de dist\\ a esa carpeta (incluí un archivo vacío .nojekyll)
+   - Push a la rama gh-pages
+4. Configurá vite.config con base: "/plataforma-${p.slug}/"
+5. La URL final será: https://${p.githubUser.toLowerCase()}.github.io/plataforma-${p.slug}/`;
+
+  return msg;
+}
+
+// ═══════════════════════════════ COMPONENTES DE FORM ═══════════════════════════════
+function radioCards(sec, key, opciones, otroKey) {
+  const sel = state[sec][key];
+  let html = '<div class="cards">';
+  for (const [id, label] of Object.entries(opciones)) {
+    html += `<div class="card${sel === id ? ' sel' : ''}" onclick="pick('${sec}','${key}','${id}')">${label}</div>`;
+  }
+  html += '</div>';
+  if (otroKey && sel === 'otro') {
+    html += `<input class="txt" style="margin-top:4px" placeholder="Describilo con tus palabras" value="${state[sec][otroKey].replace(/"/g,'&quot;')}" oninput="setPerfil('${otroKey}', this.value)">`;
+  }
+  return html;
+}
+
+function matBlock(tipo, titulo, icono, max) {
+  const arr = state.materiales[tipo];
+  let html = `<div class="mat-block">
+    <div class="mat-head">
+      <h4>${icono} ${titulo}</h4>
+      <div class="stepper">
+        <button onclick="cant('${tipo}',-1)" ${arr.length===0?'disabled':''}>−</button>
+        <span class="qty">${arr.length}</span>
+        <button onclick="cant('${tipo}',1)" ${arr.length>=max?'disabled':''}>+</button>
+      </div>
+    </div>`;
+  arr.forEach((it, k) => {
+    html += `<div class="obj-row">
+      <span class="tag">${PREF[tipo].nombre} ${k+1}</span>
+      <input class="txt" placeholder="Objetivo / enfoque (ej: introducción general)" value="${it.objetivo.replace(/"/g,'&quot;')}" ${it.ia?'disabled':''} oninput="setObj('${tipo}',${k},this.value)">
+      <label class="ia-chk"><input type="checkbox" ${it.ia?'checked':''} onchange="iaTog('${tipo}',${k},this.checked)"> 🤖 Que lo decida la IA</label>
+    </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+// ═══════════════════════════════ PASOS ═══════════════════════════════
+const STEPS = [
+
+  // 0 — Tu proyecto
+  () => {
+    const p = state.proyecto;
+    return `
+    <div class="step-head">
+      <div class="step-num">★</div>
+      <div><h2>Tu proyecto</h2><div class="step-sub">Contanos qué vas a convertir en plataforma de estudio</div></div>
+    </div>
+    <label class="fld">Título del curso o libro</label>
+    <input class="txt" placeholder="Ej: Introducción a la Inteligencia Artificial" value="${p.titulo.replace(/"/g,'&quot;')}" oninput="setProy('titulo', this.value)">
+    <label class="fld">Nombre de tu empresa o marca</label>
+    <input class="txt" placeholder="Ej: Academia Futuro" value="${p.marca.replace(/"/g,'&quot;')}" oninput="setProy('marca', this.value)">
+    <label class="fld">Archivo del logo <span class="opt">(opcional — dejalo vacío si no tenés logo)</span></label>
+    <input class="txt mono" placeholder="Ej: logo.png" value="${p.logoFile.replace(/"/g,'&quot;')}" oninput="setProy('logoFile', this.value)">
+    <label class="fld">Identificador corto <span class="opt">(para carpetas y repositorio — se genera solo, podés editarlo)</span></label>
+    <input class="txt mono" id="f-slug" placeholder="ej: intro-ia" value="${p.slug.replace(/"/g,'&quot;')}" oninput="setProy('slug', this.value)">
+    <label class="fld">Ruta de la carpeta del proyecto en tu PC</label>
+    <input class="txt mono" placeholder="Pegá la ruta acá" value="${p.carpeta.replace(/"/g,'&quot;')}" oninput="setProy('carpeta', this.value)">
+    <div class="hint"><strong>¿Cómo copio la ruta?</strong> En el Explorador de Windows, abrí (o creá) la carpeta del proyecto, hacé clic en la barra de dirección y copiá (Ctrl+C).</div>
+    <label class="fld">Tu usuario de GitHub <span class="opt">(para la URL final de publicación)</span></label>
+    <input class="txt mono" value="${p.githubUser.replace(/"/g,'&quot;')}" oninput="setProy('githubUser', this.value)">
+    <div class="warn" style="margin-top:16px">
+      <strong>⚠️ Regla de oro</strong>
+      Nunca se modifica una plataforma que ya existe. Cada curso nuevo vive en su propia carpeta nueva.
+    </div>
+    ${nav('Empezar →')}
+  `;},
+
+  // 1 — ¿Para quién es?
+  () => `
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div><h2>¿Para quién es la plataforma?</h2><div class="step-sub">El material se adapta al público y su nivel</div></div>
+    </div>
+    <label class="fld">¿A quién va dirigida?</label>
+    ${radioCards('perfil','audiencia', AUDIENCIAS, 'audienciaOtro')}
+    <label class="fld">¿Qué conocimientos previos tiene ese público?</label>
+    ${radioCards('perfil','nivel', NIVELES)}
+    <label class="fld">¿Qué tipo de texto es el PDF fuente?</label>
+    ${radioCards('perfil','tipoTexto', TIPOS, 'tipoTextoOtro')}
+    ${nav()}
+  `,
+
+  // 2 — Estética
+  () => {
+    const sel = state.estetica.estiloId;
+    let html = `
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div><h2>Estética de la plataforma</h2><div class="step-sub">Colores, ilustración y tipografía — se aplican a todo el material</div></div>
+    </div>
+    <div class="style-grid">`;
+    for (const [id, e] of Object.entries(ESTILOS)) {
+      html += `<div class="style-card${sel===id?' sel':''}" onclick="pickEstilo('${id}')">
+        <h5>${e.nombre}</h5>
+        <div class="swatches">${e.colores.map(c => `<div class="sw" style="background:${c}"></div>`).join('')}</div>
+        <p>${e.descripcion.slice(0, 90)}…</p>
+      </div>`;
+    }
+    html += `<div class="style-card${sel==='custom'?' sel':''}" onclick="pickEstilo('custom')">
+      <h5>🎨 Personalizado</h5>
+      <div class="swatches">${state.estetica.custom.colores.map(c => `<div class="sw" style="background:${c}"></div>`).join('')}</div>
+      <p>Definí vos los colores y el estilo de ilustración.</p>
+    </div></div>`;
+    if (sel === 'custom') {
+      const cu = state.estetica.custom;
+      html += `<div class="mat-block" style="margin-top:10px">
+        <label class="fld" style="margin-top:0">Colores de la paleta</label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          ${cu.colores.map((c, k) => `<div style="text-align:center">
+            <input type="color" value="${c}" style="width:52px;height:40px;border:none;cursor:pointer;background:none" oninput="setCustom(${k}, this.value)">
+            <div style="font-family:monospace;font-size:0.68rem;color:#64748b">${['Principal','Secundario','Acento','Fondo claro'][k]}</div>
+          </div>`).join('')}
+        </div>
+        <label class="fld">Describí el estilo visual <span class="opt">(como se lo dirías a un ilustrador)</span></label>
+        <textarea class="txt" rows="3" placeholder="Ej: estilo cómic retro con tramas de puntos, colores saturados, líneas gruesas de tinta..." oninput="setCustomTxt('descripcion', this.value)">${cu.descripcion.replace(/</g,'&lt;')}</textarea>
+        <label class="fld">Tipografía <span class="opt">(opcional)</span></label>
+        <input class="txt" placeholder="Ej: serif clásica para títulos, sans-serif para texto" value="${cu.tipografia.replace(/"/g,'&quot;')}" oninput="setCustomTxt('tipografia', this.value)">
+      </div>`;
+    }
+    html += nav();
+    return html;
+  },
+
+  // 3 — Materiales
+  () => {
+    const m = state.materiales, total = totalHerr();
+    let html = `
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div><h2>¿Qué materiales querés generar?</h2><div class="step-sub">Elegí cantidad y objetivo de cada uno — o dejá que la IA decida el enfoque</div></div>
+    </div>
+    ${matBlock('videos','Videos de clase','🎬',5)}
+    ${matBlock('infografias','Infografías','🖼️',5)}
+    ${matBlock('presentaciones','Presentaciones','📑',5)}
+    ${matBlock('audios','Audios (podcast)','🎧',3)}
+    <div class="mat-block">
+      <h4 style="font-family:sans-serif;font-size:0.92rem;margin-bottom:6px">📝 Resúmenes y evaluación</h4>
+      <label class="tog-row"><input type="checkbox" ${m.resumenDetallado?'checked':''} onchange="setMat('resumenDetallado', this.checked)"> Resumen general <strong>detallado</strong></label>
+      <label class="tog-row"><input type="checkbox" ${m.resumenCondensado?'checked':''} onchange="setMat('resumenCondensado', this.checked)"> Resumen <strong>súper condensado y pedagógico</strong> (repaso final)</label>
+      <label class="tog-row"><input type="checkbox" ${m.quiz.incluir?'checked':''} onchange="quizTog(this.checked)"> Quiz evaluativo de opción múltiple</label>
+      ${m.quiz.incluir ? `<div class="obj-row" style="margin-left:26px">
+        <span style="font-family:sans-serif;font-size:0.82rem;color:#555">Cantidad de preguntas:</span>
+        <div class="stepper">
+          <button onclick="quizCant(-1)" ${m.quiz.cantidad<=5?'disabled':''}>−</button>
+          <span class="qty">${m.quiz.cantidad}</span>
+          <button onclick="quizCant(1)" ${m.quiz.cantidad>=20?'disabled':''}>+</button>
+        </div>
+      </div>` : ''}
+    </div>`;
+    if (total > 11) {
+      html += `<div class="warn"><strong>⚠️ Son ${total} entregables en total</strong>
+      Con más de ~10, NotebookLM puede desbordarse o encolar solo una parte (decir "generando" sin avanzar). Si te pasa, reintentá el prompt o bajá alguna cantidad.</div>`;
+    }
+    html += nav();
+    return html;
+  },
+
+  // 4 — Subir a NotebookLM
+  () => {
+    const p = state.proyecto;
+    return `
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div><h2>Preparar y subir a NotebookLM</h2><div class="step-sub">Lo hacés vos · notebooklm.google.com</div></div>
+    </div>
+    <ul class="ck">
+      ${ckLi('4-0', `📗 Tengo el <strong>PDF fuente</strong> de "${p.titulo}" listo en mi computadora`)}
+      ${p.logoFile.trim() ? ckLi('4-1', `🏷️ Tengo el logo <span class="badge">${p.logoFile.trim()}</span> listo`) : ''}
+      ${ckLi('4-2', `Abrí <strong>notebooklm.google.com</strong> en el navegador`)}
+      ${ckLi('4-3', `Creé un cuaderno nuevo para <strong>"${p.titulo}"</strong>`)}
+      ${ckLi('4-4', `Agregué como fuente: el <strong>PDF fuente</strong>`)}
+      ${p.logoFile.trim() ? ckLi('4-5', `Agregué como fuente: el logo <span class="badge">${p.logoFile.trim()}</span>`) : ''}
+    </ul>
+    <div class="hl">
+      <h4>¿El PDF no trae cuestionario?</h4>
+      <p>No hace falta: el quiz lo genera la IA a partir del texto — no necesitás que el PDF traiga preguntas.</p>
+    </div>
+    ${nav()}
+  `;},
+
+  // 5 — Prompt Maestro
+  () => {
+    const c = cants();
+    return `
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div><h2>Prompt Maestro → guardá el PDF y esperá el material</h2><div class="step-sub">Un solo mensaje, dispara los ${totalHerr()} entregables</div></div>
+    </div>
+    <p class="inst">Copiá este prompt y pegalo <strong>completo, en un solo mensaje</strong> en el chat de NotebookLM. Está armado con todas tus respuestas.</p>
+    <div class="pbox">
+      <button class="cpbtn" id="cpM" onclick="cp(buildMaestro(),'cpM')">Copiar</button>
+      <pre>${esc(buildMaestro())}</pre>
+    </div>
+    <div class="hl">
+      <h4>✅ ¿Qué debería pasar apenas lo pegues?</h4>
+      <p>Con <strong>solo pegar este mensaje ya alcanza</strong> — no hace falta escribirle después "dale, generalo". En los próximos minutos deberías ver en el <strong>Panel de Studio</strong> tarjetas nuevas en estado "generando" para los ${totalHerr()} entregables. Si pasan varios minutos y el Panel sigue vacío, es señal de que no arrancó: volvé a pegar el mismo prompt una vez más.</p>
+    </div>
+    <div class="step-pdf">
+      <h4>Cómo guardar la respuesta de texto como PDF</h4>
+      <ol>
+        <li>Seleccioná toda la respuesta de NotebookLM (Ctrl+A en el chat o selección manual)</li>
+        <li>Copiá y pegá en un <strong>Google Doc</strong> o <strong>Word</strong></li>
+        <li>Exportá como PDF: <em>Archivo → Descargar → PDF</em></li>
+        <li>Nombrá el archivo exactamente así:</li>
+      </ol>
+      <div class="nombre-archivo">${fasesPdfName()}</div>
+    </div>
+    <div class="darkbox">
+      <div class="db-title">⚠️ Leé esto ANTES de descargar cualquier archivo</div>
+      <p>A medida que cada entregable termine de generarse, <strong style="color:#a5b4fc">descargalo en el momento</strong> y al guardar el archivo agregá su prefijo al principio del nombre:</p>
+      ${c.v ? `<div class="pill-row"><span class="pill">Videos</span><span class="mono">1-  2-  … ${c.v}-  (.mp4)</span></div>` : ''}
+      ${c.i ? `<div class="pill-row"><span class="pill">Infografías</span><span class="mono">1-  2-  … ${c.i}-  (.png)</span></div>` : ''}
+      ${c.p ? `<div class="pill-row"><span class="pill">Presentaciones</span><span class="mono">P1-  … P${c.p}-  (.pdf)</span></div>` : ''}
+      ${c.a ? `<div class="pill-row"><span class="pill">Audios</span><span class="mono">A1-  … A${c.a}-  (.m4a)</span></div>` : ''}
+      <p style="margin-top:8px">El informe/guía, los PDF y el logo no llevan prefijo.</p>
+    </div>
+    <ul class="ck">
+      ${ckLi('5-0', `Confirmo que ya vi actividad en el Panel de Studio (tarjetas en "generando") o que reintenté el prompt porque no arrancaba`)}
+    </ul>
+    ${nav()}
+  `;},
+
+  // 6 — Descargar materiales
+  () => `
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <div><h2>Descargar los materiales</h2><div class="step-sub">Lo hacés vos · en NotebookLM, uno por uno</div></div>
+    </div>
+    <p class="inst">Descargá cada material desde el Panel de Studio, con su prefijo en el nombre:</p>
+    <ul class="ck">
+      ${buildChecklistDescarga()}
+    </ul>
+    <div class="hl">
+      <h4>¿Ya descargaste algo sin el prefijo?</h4>
+      <p>No hay problema. En la carpeta, seleccioná el archivo y presioná <strong>F2</strong> para renombrar — solo agregá el prefijo al principio (<code>1-</code>, <code>P1-</code>, <code>A1-</code>…). Dos segundos por archivo.</p>
+    </div>
+    ${nav()}
+  `,
+
+  // 7 — Preparar carpeta + modelo opcional
+  () => `
+    <div class="step-head">
+      <div class="step-num">7</div>
+      <div><h2>Preparar la carpeta del proyecto</h2><div class="step-sub">Lo hacés vos · en el Explorador de Windows</div></div>
+    </div>
+    <p class="inst">La carpeta del proyecto debe quedar así <strong>antes</strong> de avisar a Claude:</p>
+    <div class="ftree"><pre>${buildArbol()}</pre></div>
+    <div class="hl">
+      <h4>¿Tenés una plataforma anterior para usar de ejemplo? (opcional)</h4>
+      <p>Si ya creaste una plataforma antes, podés indicar dónde está y Claude la usará como referencia de estructura (le cambia la marca y el contenido). <strong>Si la dejás vacía, Claude diseña la plataforma desde cero</strong> con la estética que elegiste — también funciona perfecto.</p>
+    </div>
+    <label class="fld">Ruta de la app modelo <span class="opt">(opcional)</span></label>
+    <input class="txt mono" placeholder="Dejalo vacío para diseñar desde cero" value="${state.modeloPath.replace(/"/g,'&quot;')}" oninput="setModelo(this.value)">
+    <div class="hint">Ej.: D:\\00_HERNAN-MegaSync-26\\5_VARIOS HERNAN\\AI\\00_CLAUDE MAIN\\00_IA-CONST. FLIARES 2026\\GUIA-1\\PLATAFORMA-ESTUDIO-G1\\app<br>
+    Es la carpeta que tiene adentro <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">src</code>, <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">public</code> y <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">package.json</code>. No hay que copiar nada — Claude la lee directamente desde ahí.</div>
+    <div class="warn" style="margin-top:16px">
+      <strong>🗑️ Al terminar de publicar: podés borrar la carpeta materiales\\</strong>
+      Sus archivos quedan copiados dentro de la plataforma (en <code>app\\public\\media\\</code>), así que dejarla duplica los videos y PDF. Si preferís guardar los originales, movela fuera del proyecto.
+    </div>
+    ${nav('Ver mensaje →')}
+  `,
+
+  // 8 — Mensaje para Claude
+  () => `
+    <div class="step-head">
+      <div class="step-num">✓</div>
+      <div><h2>Mensaje listo para Claude</h2><div class="step-sub">Dos pasos: abrir Claude Code → pegar mensaje</div></div>
+    </div>
+    <div class="greenbox">
+      <div style="font-size:0.95rem;font-weight:700;color:var(--ink);margin-bottom:8px;">① Primero: abrí Claude Code con esta carpeta de trabajo</div>
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px;line-height:1.4">Es la carpeta del proyecto — contiene los materiales.${state.modeloPath ? ' El modelo de referencia está en otra ubicación y se indica en el mensaje.' : ''}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <code id="cwdVal" style="flex:1;background:#fff;border:1px solid var(--accent);border-radius:6px;padding:8px 10px;font-size:0.78rem;color:var(--ink);word-break:break-all">${state.proyecto.carpeta}</code>
+        <button id="cpCwd" onclick="cpCwd()" style="flex-shrink:0;background:var(--accent);color:white;border:none;border-radius:6px;padding:8px 14px;font-size:0.8rem;cursor:pointer;font-weight:600">Copiar</button>
+      </div>
+    </div>
+    <div style="font-family:sans-serif;font-size:0.9rem;font-weight:700;color:var(--ink);margin-bottom:8px;">② Después: copiá y pegá este mensaje en Claude Code</div>
+    <div class="pbox">
+      <button class="cpbtn" id="cpFin" onclick="cp(buildMensajeClaude(),'cpFin')">Copiar</button>
+      <pre id="msgFin">${esc(buildMensajeClaude())}</pre>
+    </div>
+    <div class="hl" style="margin-top:14px">
+      <h4>¿Qué hace Claude a partir de aquí?</h4>
+      <ul>
+        <li>Lee <strong>${fasesPdfName()}</strong> y extrae los textos${state.materiales.quiz.incluir ? ' y la clave del quiz' : ''}</li>
+        ${state.modeloPath ? `<li>Lee el código del modelo de referencia (sin tocarlo) y lo replica adaptando marca y contenido</li>` : `<li>Diseña la app desde cero (React + Vite + Tailwind) con tu estética y solo las secciones elegidas</li>`}
+        <li>Escribe todas las secciones con el contenido de la Fase 0</li>
+        <li>Crea el repositorio en GitHub, publica en GitHub Pages y te entrega la URL final</li>
+      </ul>
+    </div>
+    <div class="nav">
+      <button class="btn-back" onclick="go(-1)">← Atrás</button>
+      <button class="btn-next" onclick="restart()">📚 Crear otra plataforma</button>
+    </div>
+  `
+];
+
+function cpCwd() {
+  const t = document.getElementById('cwdVal').textContent;
+  navigator.clipboard.writeText(t).then(() => {
+    const b = document.getElementById('cpCwd');
+    b.textContent = '✓';
+    setTimeout(() => { b.textContent = 'Copiar'; }, 1800);
+  });
+}
+
+// ═══════════════════════════════ RENDER ═══════════════════════════════
+const DOT_LABELS = ['★', '1', '2', '3', '4', '5', '6', '7', '✓'];
+
+function progLabel() {
+  if (state.step === 0) return 'Inicio';
+  if (state.step === TOTAL - 1) return '¡Listo!';
+  return `Paso ${DOT_LABELS[state.step]} de ${DOT_LABELS[TOTAL - 2]}`;
+}
+
+function render() {
+  const dc = document.getElementById('dots');
+  dc.innerHTML = '';
+  for (let i = 0; i < TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === state.step ? ' active' : i < state.step ? ' done' : '');
+    d.textContent = DOT_LABELS[i];
+    d.style.fontSize = i === 0 || i === TOTAL - 1 ? '0.85rem' : '0.72rem';
+    if (i < state.step) d.onclick = () => { state.step = i; save(); render(); };
+    dc.appendChild(d);
+  }
+  document.getElementById('progLbl').textContent = progLabel();
+  document.getElementById('content').innerHTML = STEPS[state.step]();
+  updateNavState();
+}
+
+if (resumedFromStorage) {
+  document.getElementById('resumeSlot').innerHTML = `<div class="resume-banner">
+    <span style="flex:1">📌 Retomaste donde dejaste${state.proyecto.titulo ? ' — «' + state.proyecto.titulo.replace(/</g,'&lt;') + '»' : ''}.</span>
+    <button onclick="restart()">Empezar de cero</button>
+  </div>`;
+}
+
+render();
+</script>
+</body>
+</html>
