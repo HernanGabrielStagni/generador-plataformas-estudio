@@ -309,7 +309,7 @@ function defaultState() {
     step: 0,
     proyecto: { titulo:'', marca:'', logoFile:'', slug:'', slugTouched:false, carpeta:'', githubUser:'HernanGabrielStagni' },
     perfil: { audiencia:'publico', audienciaOtro:'', nivel:'basico', tipoTexto:'manual', tipoTextoOtro:'' },
-    estetica: { estiloId:'minimalista', custom: { colores:['#1f2937','#374151','#d97706','#f9fafb'], descripcion:'', tipografia:'' } },
+    estetica: { estiloId:'minimalista', estiloImagenId:'', custom: { colores:['#1f2937','#374151','#d97706','#f9fafb'], descripcion:'', tipografia:'' } },
     materiales: {
       videos:         [ {objetivo:'', ia:true}, {objetivo:'', ia:true}, {objetivo:'', ia:true} ],
       infografias:    [ {objetivo:'', ia:true}, {objetivo:'', ia:true}, {objetivo:'', ia:true} ],
@@ -440,6 +440,39 @@ const FOCO_QUIZ = {
   otro: 'de comprensión de las ideas principales del texto'
 };
 
+const ESTILO_IMAGEN_POR_TIPO = {
+  manual: [
+    { id:'esquematico', nombre:'Esquemático', desc:'diagramas, flujos, listas visuales e iconografía clara — prioriza que se entienda el procedimiento por sobre el detalle artístico' },
+    { id:'realista', nombre:'Realista aplicado', desc:'fotografías o renders realistas de personas y situaciones aplicando lo que enseña el manual' },
+    { id:'ilustrado', nombre:'Ilustración editorial', desc:'dibujos estilizados tipo publicación profesional, ni esquemáticos ni fotorrealistas' }
+  ],
+  tecnico: [
+    { id:'esquematico', nombre:'Esquemático técnico', desc:'diagramas, arquitecturas, flujos y iconografía técnica precisa, líneas limpias, cero adorno — prioriza la exactitud conceptual' },
+    { id:'realista', nombre:'Técnico realista', desc:'fotografías o renders realistas de equipos, interfaces o procesos técnicos reales' },
+    { id:'minimal', nombre:'Icónico minimalista', desc:'íconos y pictogramas simples sobre mucho espacio en blanco, sin ilustraciones complejas' }
+  ],
+  academico: [
+    { id:'esquematico', nombre:'Esquemático conceptual', desc:'mapas conceptuales, diagramas y líneas de tiempo claras, priorizando la estructura de las ideas' },
+    { id:'editorial', nombre:'Editorial académico', desc:'ilustración seria tipo publicación universitaria o paper, sobria y precisa' },
+    { id:'realista', nombre:'Documental realista', desc:'fotografías o imágenes realistas con espíritu documental, ligadas al contexto histórico o social del texto' }
+  ],
+  espiritual: [
+    { id:'acuarela', nombre:'Acuarela simbólica', desc:'símbolos, luz y trazos de acuarela difuminados, textura suave, sensación contemplativa' },
+    { id:'realista', nombre:'Contemplativo realista', desc:'fotografías realistas de paisajes, naturaleza o escenas serenas ligadas al tema' },
+    { id:'mistico', nombre:'Ilustración mística', desc:'figuras, mandalas y formas simbólicas dibujadas, con aire onírico y trascendente' }
+  ],
+  novela: [
+    { id:'narrativo', nombre:'Ilustración narrativa', desc:'escenas y personajes estilizados como ilustración de libro, capturando momentos clave de la trama' },
+    { id:'realista', nombre:'Cinematográfico realista', desc:'imágenes realistas con composición y luz de fotograma de película, clima emocional de cada escena' },
+    { id:'acuarela', nombre:'Acuarela atmosférica', desc:'trazos de acuarela sueltos que transmiten atmósfera y emoción más que detalle literal' }
+  ],
+  otro: [
+    { id:'esquematico', nombre:'Esquemático', desc:'diagramas e iconografía clara, priorizando que se entienda la idea sobre el detalle visual' },
+    { id:'realista', nombre:'Realista', desc:'fotografías o renders realistas ligados al contenido del texto' },
+    { id:'ilustrado', nombre:'Ilustración estilizada', desc:'dibujos estilizados, ni esquemáticos ni fotorrealistas' }
+  ]
+};
+
 // ═══════════════════════════════ HELPERS ═══════════════════════════════
 function slugify(t) {
   return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -453,6 +486,11 @@ function estiloActivo() {
              tipografia: c.tipografia || 'A criterio del diseñador' };
   }
   return ESTILOS[state.estetica.estiloId];
+}
+function opcionesEstiloImagen() { return ESTILO_IMAGEN_POR_TIPO[tipoKey()] || ESTILO_IMAGEN_POR_TIPO.otro; }
+function estiloImagenActivo() {
+  const ops = opcionesEstiloImagen();
+  return ops.find(o => o.id === state.estetica.estiloImagenId) || ops[0];
 }
 function audLabel() { return state.perfil.audiencia === 'otro' ? (state.perfil.audienciaOtro || 'otro público') : AUDIENCIAS[state.perfil.audiencia]; }
 function tipoLabel() { return state.perfil.tipoTexto === 'otro' ? (state.perfil.tipoTextoOtro || 'otro tipo de texto') : TIPOS[state.perfil.tipoTexto]; }
@@ -479,6 +517,7 @@ function setProy(k, val) {
 function pick(sec, k, val) { state[sec][k] = val; save(); render(); }
 function setPerfil(k, val) { state.perfil[k] = val; save(); }
 function pickEstilo(id) { state.estetica.estiloId = id; save(); render(); }
+function pickEstiloImagen(id) { state.estetica.estiloImagenId = id; save(); render(); }
 function setCustom(i, val) { state.estetica.custom.colores[i] = val; save(); }
 function setCustomTxt(k, val) { state.estetica.custom[k] = val; save(); }
 function cant(tipo, delta) {
@@ -670,14 +709,22 @@ Analizá cada sección o capítulo del texto e identificá su título y foco.
 Para cada una extraé:
 ${ANALISIS_POR_TIPO[tk].map(x => '• ' + x).join('\n')}`;
 
-  let f2 = `FASE 2 — DISEÑO (INVIOLABLE, aplica a todos los entregables)
+  const estImg = estiloImagenActivo();
+  let f2 = `FASE 2 — DISEÑO (INVIOLABLE, aplica a todos los entregables, incluidos los videos)
 • Estilo visual: ${est.descripcion}
-• Paleta: ${est.colores.join(' · ')}
+• Tipo de imagen/ilustración: ${estImg.nombre} — ${estImg.desc}
+• Paleta EXACTA (usar estos códigos de color tal cual, no colores aproximados ni "parecidos"): ${est.colores.join(' · ')}
 • Tipografía: ${est.tipografia}`;
-  if (p.logoFile.trim()) f2 += `\n• Logo '${p.logoFile.trim()}': sello discreto en esquina inferior derecha.
-  PROHIBIDO inventar versiones o ubicarlo en otro lugar.`;
-  f2 += `\n• Texto calado sobre el arte. PROHIBIDO recuadros o cajas blancas de texto.
-• Fondos: ilustración/composición continua. PROHIBIDO pantallas blancas lisas con texto.`;
+  if (p.logoFile.trim()) f2 += `\n• Logo '${p.logoFile.trim()}': usalo EXACTAMENTE tal cual fue provisto como fuente —
+  NO lo rediseñes, NO lo redibujes, NO le cambies colores, tipografía ni proporciones.
+  Insertalo como imagen sin modificaciones, como sello discreto en la esquina inferior derecha.
+  PROHIBIDO inventar versiones alternativas o ubicarlo en otro lugar.`;
+  f2 += `\n• Texto calado directamente sobre la ilustración de fondo. PROHIBIDO todo recuadro,
+  tarjeta o bloque de color sólido (blanco o de cualquier otro color) que tape el fondo —
+  esta regla aplica también, y especialmente, a los videos: nada de paneles ni cajas de
+  color plano cubriendo la imagen, el texto va integrado a la escena.
+• Fondos: ilustración/composición continua en todo el entregable. PROHIBIDO pantallas
+  lisas de un solo color con texto encima.`;
 
   const descCorta = est.descripcion.length > 180 ? est.descripcion.slice(0, 180) + '…' : est.descripcion;
   let f3 = `FASE 3 — ENTREGABLES (ejecutar las ${totalHerr()} herramientas ya, en paralelo)`;
@@ -686,6 +733,8 @@ ${ANALISIS_POR_TIPO[tk].map(x => '• ' + x).join('\n')}`;
     idx++;
     f3 += `\n\n${idx}) VIDEO (herramienta "Resumen en video") × ${c.v}:
   Formato: Explicación · Idioma: español (Latinoamérica)
+  Duración: al menos 12 minutos cada uno (evitar resúmenes cortos de 5-7 minutos;
+  desarrollá el contenido con más profundidad y ejemplos para llegar a esa duración)
   Estilo visual: Personalizado
   Descripción: "${descCorta} · ${p.titulo} · ${p.marca}"`;
     m.videos.forEach((it, k) => { f3 += `\n  Video ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
@@ -713,7 +762,12 @@ ${ANALISIS_POR_TIPO[tk].map(x => '• ' + x).join('\n')}`;
   if (c.a) {
     idx++;
     f3 += `\n\n${idx}) AUDIO (herramienta "Resumen en audio") × ${c.a}:
-  Podcast de 8-10 min cada uno.`;
+  Formato: Podcast conversado entre 2 (dos) voces, estilo diálogo — NO un narrador
+  único leyendo un texto. Deben sonar como dos presentadores charlando entre sí,
+  haciéndose preguntas y comentarios, con naturalidad.
+  Tono: cálido, ameno y entusiasta — cercano y con energía positiva, no acartonado
+  ni de lectura formal.
+  Duración: 8-10 min cada uno.`;
     m.audios.forEach((it, k) => { f3 += `\n  Audio ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
   }
   idx++;
@@ -898,9 +952,10 @@ ${seccionesPlataforma().map((s, k) => `${k+1}. ${s}`).join('\n')}
 
 MARCA Y ESTÉTICA:
 - Nombre de la marca: ${p.marca}
-- Título de la plataforma: ${p.titulo}${p.logoFile.trim() ? `\n- Logo: ${p.logoFile.trim()} (header y pantalla de intro)` : ''}
-- Paleta de colores: ${est.colores.join(' · ')}
+- Título de la plataforma: ${p.titulo}${p.logoFile.trim() ? `\n- Logo: ${p.logoFile.trim()} — usalo EXACTAMENTE tal cual es el archivo (no lo rediseñes ni cambies sus colores), en el header y la pantalla de intro` : ''}
+- Paleta de colores EXACTA (usar estos códigos hex tal cual, sin aproximar): ${est.colores.join(' · ')}
 - Estilo visual: ${est.descripcion}
+- Tipo de imagen/ilustración: ${estiloImagenActivo().nombre} — ${estiloImagenActivo().desc}
 - Tipografía: ${est.tipografia}
 `;
 
@@ -1084,6 +1139,13 @@ const STEPS = [
         <input class="txt" placeholder="Ej: serif clásica para títulos, sans-serif para texto" value="${cu.tipografia.replace(/"/g,'&quot;')}" oninput="setCustomTxt('tipografia', this.value)">
       </div>`;
     }
+    const opsImg = opcionesEstiloImagen();
+    const estImgSel = estiloImagenActivo();
+    html += `<label class="fld" style="margin-top:22px">¿Qué tipo de imágenes/ilustraciones preferís? <span class="opt">(según "${tipoLabel()}")</span></label>
+    <div class="cards">
+      ${opsImg.map(o => `<div class="card${estImgSel.id===o.id?' sel':''}" onclick="pickEstiloImagen('${o.id}')" title="${o.desc.replace(/"/g,'&quot;')}">${o.nombre}</div>`).join('')}
+    </div>
+    <div class="hint">${estImgSel.nombre}: ${estImgSel.desc}</div>`;
     html += nav();
     return html;
   },
