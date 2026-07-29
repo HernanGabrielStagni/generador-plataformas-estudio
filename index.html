@@ -940,8 +940,11 @@ const STEPS = [
     <input class="txt" placeholder="Ej: Introducción a la Inteligencia Artificial" value="${p.titulo.replace(/"/g,'&quot;')}" oninput="setProy('titulo', this.value)">
     <label class="fld">Nombre de tu empresa o marca</label>
     <input class="txt" placeholder="Ej: Academia Futuro" value="${p.marca.replace(/"/g,'&quot;')}" oninput="setProy('marca', this.value)">
-    <label class="fld">Archivo del logo <span class="opt">(opcional — dejalo vacío si no tenés logo)</span></label>
+    <label class="fld">Nombre del archivo de tu logo <span class="opt">(opcional — dejalo vacío si no tenés logo)</span></label>
     <input class="txt mono" placeholder="Ej: logo.png" value="${p.logoFile.replace(/"/g,'&quot;')}" oninput="setProy('logoFile', this.value)">
+    <div class="hint">
+      <strong>¿Qué escribo acá?</strong> Este campo <strong>no busca ni sube nada todavía</strong> — es solo el nombre que le vas a poner al archivo cuando lo guardes. Más adelante (paso 7) el wizard te va a pedir que armes una carpeta llamada <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">materiales</code> y ahí adentro pongas el archivo real de tu logo <strong>con este mismo nombre exacto</strong>. Ejemplo: si tu logo hoy se llama <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">Logo final (2).png</code>, renombralo a algo simple como <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">logo.png</code> y escribí <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">logo.png</code> acá — sin espacios ni paréntesis.
+    </div>
     <label class="fld">Identificador corto <span class="opt">(para carpetas y repositorio — se genera solo, podés editarlo)</span></label>
     <input class="txt mono" id="f-slug" placeholder="ej: intro-ia" value="${p.slug.replace(/"/g,'&quot;')}" oninput="setProy('slug', this.value)">
     <label class="fld">Ruta de la carpeta del proyecto en tu PC</label>
@@ -1055,17 +1058,18 @@ const STEPS = [
       <div><h2>Preparar y subir a NotebookLM</h2><div class="step-sub">Lo hacés vos · notebooklm.google.com</div></div>
     </div>
     <ul class="ck">
-      ${ckLi('4-0', `📗 Tengo el <strong>PDF fuente</strong> de "${p.titulo}" listo en mi computadora`)}
-      ${p.logoFile.trim() ? ckLi('4-1', `🏷️ Tengo el logo <span class="badge">${p.logoFile.trim()}</span> listo`) : ''}
+      ${ckLi('4-0', `📗 Tengo el archivo <strong>PDF de "${p.titulo}"</strong> guardado en mi computadora (en cualquier carpeta, por ahora)`)}
+      ${p.logoFile.trim() ? ckLi('4-1', `🏷️ Tengo el archivo de mi logo, <strong>renombrado exactamente como</strong> <span class="badge">${p.logoFile.trim()}</span>, guardado en mi computadora`) : ''}
       ${ckLi('4-2', `Abrí <strong>notebooklm.google.com</strong> en el navegador`)}
       ${ckLi('4-3', `Creé un cuaderno nuevo para <strong>"${p.titulo}"</strong>`)}
-      ${ckLi('4-4', `Agregué como fuente: el <strong>PDF fuente</strong>`)}
-      ${p.logoFile.trim() ? ckLi('4-5', `Agregué como fuente: el logo <span class="badge">${p.logoFile.trim()}</span>`) : ''}
+      ${ckLi('4-4', `Subí como fuente el archivo <strong>PDF</strong> (botón "Agregar fuente" → elegir el PDF de tu computadora)`)}
+      ${p.logoFile.trim() ? ckLi('4-5', `Subí como fuente el archivo <span class="badge">${p.logoFile.trim()}</span> de tu logo (mismo botón "Agregar fuente")`) : ''}
     </ul>
     <div class="hl">
       <h4>¿El PDF no trae cuestionario?</h4>
       <p>No hace falta: el quiz lo genera la IA a partir del texto — no necesitás que el PDF traiga preguntas.</p>
     </div>
+    <div class="hint">Por ahora estos archivos pueden estar en cualquier carpeta de tu PC (Descargas, Escritorio, donde sea). Recién en el <strong>paso 7</strong> los vas a juntar a todos —PDF, logo y lo que descargues de NotebookLM— dentro de una única carpeta llamada <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">materiales</code>.</div>
     ${nav()}
   `;},
 
@@ -1134,8 +1138,12 @@ const STEPS = [
       <div class="step-num">7</div>
       <div><h2>Preparar la carpeta del proyecto</h2><div class="step-sub">Lo hacés vos · en el Explorador de Windows</div></div>
     </div>
-    <p class="inst">La carpeta del proyecto debe quedar así <strong>antes</strong> de avisar a Claude:</p>
+    <p class="inst">La carpeta del proyecto debe quedar así <strong>antes</strong> de avisar a Claude. Ahora es cuando tenés que <strong>juntar en un solo lugar</strong> todos los archivos: el PDF fuente, tu logo y todo lo que descargaste de NotebookLM en el paso 6 — todo adentro de una carpeta llamada <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">materiales</code>, dentro de la carpeta del proyecto que definiste al principio:</p>
     <div class="ftree"><pre>${buildArbol()}</pre></div>
+    ${state.proyecto.logoFile.trim() ? `<div class="warn">
+      <strong>🏷️ Tu logo va adentro de materiales\\, con este nombre exacto</strong>
+      Copiá el archivo real de tu logo dentro de <code>materiales\\</code> y renombralo (si hace falta) para que se llame exactamente <code>${state.proyecto.logoFile.trim()}</code> — sin cambiar ni una letra, porque Claude va a buscar el archivo por ese nombre.
+    </div>` : ''}
     <div class="hl">
       <h4>¿Tenés una plataforma anterior para usar de ejemplo? (opcional)</h4>
       <p>Si ya creaste una plataforma antes, podés indicar dónde está y Claude la usará como referencia de estructura (le cambia la marca y el contenido). <strong>Si la dejás vacía, Claude diseña la plataforma desde cero</strong> con la estética que elegiste — también funciona perfecto.</p>
