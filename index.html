@@ -936,6 +936,16 @@ const STEPS = [
       <div class="step-num">★</div>
       <div><h2>Tu proyecto</h2><div class="step-sub">Contanos qué vas a convertir en plataforma de estudio</div></div>
     </div>
+    <div class="hl">
+      <h4>🗺️ Cómo funciona esto, en criollo</h4>
+      <p>Vamos a convertir tu PDF (un curso, manual, libro, lo que sea) en una página web de estudio, con videos, infografías, resúmenes y un quiz generados por IA.</p>
+      <ol style="margin-top:6px">
+        <li>Primero creás en tu computadora <strong>una carpeta nueva y vacía</strong> para este proyecto — ahí vamos a ir juntando todo: tu PDF, tu logo (si tenés), y después los archivos que genere la IA.</li>
+        <li>Este wizard te va armando, paso a paso, los mensajes exactos que tenés que copiar y pegar: primero en <strong>NotebookLM</strong> (una herramienta de Google que genera el material) y al final en <strong>Claude Code</strong> (que arma la página web y la publica).</li>
+        <li>Al final vas a tener una URL para compartir con quien quieras.</li>
+      </ol>
+      <p style="margin-top:6px">No hace falta saber programar ni usar ninguna de estas herramientas antes — te vamos guiando en cada paso.</p>
+    </div>
     <label class="fld">Título del curso o libro</label>
     <input class="txt" placeholder="Ej: Introducción a la Inteligencia Artificial" value="${p.titulo.replace(/"/g,'&quot;')}" oninput="setProy('titulo', this.value)">
     <label class="fld">Nombre de tu empresa o marca</label>
@@ -943,15 +953,21 @@ const STEPS = [
     <label class="fld">Nombre del archivo de tu logo <span class="opt">(opcional — dejalo vacío si no tenés logo)</span></label>
     <input class="txt mono" placeholder="Ej: logo.png" value="${p.logoFile.replace(/"/g,'&quot;')}" oninput="setProy('logoFile', this.value)">
     <div class="hint">
-      <strong>¿Qué escribo acá?</strong> Este campo <strong>no busca ni sube nada todavía</strong> — es solo el nombre que le vas a poner al archivo cuando lo guardes. Más adelante (paso 7) el wizard te va a pedir que armes una carpeta llamada <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">materiales</code> y ahí adentro pongas el archivo real de tu logo <strong>con este mismo nombre exacto</strong>. Ejemplo: si tu logo hoy se llama <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">Logo final (2).png</code>, renombralo a algo simple como <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">logo.png</code> y escribí <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">logo.png</code> acá — sin espacios ni paréntesis.
+      <strong>¿Qué escribo acá?</strong> Este campo <strong>no busca ni sube nada todavía</strong> — es solo el nombre que le vas a poner al archivo cuando lo guardes. Más adelante (paso 7) el wizard te va a pedir que pongas el archivo real de tu logo, dentro de la carpeta del proyecto, <strong>con este mismo nombre exacto</strong>. Ejemplo: si tu logo hoy se llama <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">Logo final (2).png</code>, renombralo a algo simple como <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">logo.png</code> y escribí <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">logo.png</code> acá — sin espacios ni paréntesis.
     </div>
-    <label class="fld">Identificador corto <span class="opt">(para carpetas y repositorio — se genera solo, podés editarlo)</span></label>
-    <input class="txt mono" id="f-slug" placeholder="ej: intro-ia" value="${p.slug.replace(/"/g,'&quot;')}" oninput="setProy('slug', this.value)">
     <label class="fld">Ruta de la carpeta del proyecto en tu PC</label>
     <input class="txt mono" placeholder="Pegá la ruta acá" value="${p.carpeta.replace(/"/g,'&quot;')}" oninput="setProy('carpeta', this.value)">
-    <div class="hint"><strong>¿Cómo copio la ruta?</strong> En el Explorador de Windows, abrí (o creá) la carpeta del proyecto, hacé clic en la barra de dirección y copiá (Ctrl+C).</div>
-    <label class="fld">Tu usuario de GitHub <span class="opt">(para la URL final de publicación)</span></label>
+    <div class="hint"><strong>¿Cómo la creo y copio?</strong> En el Explorador de Windows, creá una carpeta nueva y vacía donde quieras (por ejemplo <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">D:\\CURSOS\\mi-curso</code>), entrá en ella, hacé clic en la barra de dirección de arriba y copiá (Ctrl+C). Es la carpeta mencionada en el punto 1 de arriba: ahí vamos a ir guardando todo.</div>
+    <label class="fld">Identificador corto <span class="opt">(se genera solo a partir del título, podés editarlo)</span></label>
+    <input class="txt mono" id="f-slug" placeholder="ej: intro-ia" value="${p.slug.replace(/"/g,'&quot;')}" oninput="setProy('slug', this.value)">
+    <div class="hint">
+      <strong>¿Para qué sirve esto?</strong> Es una versión corta de tu título, sin espacios ni tildes, que se usa como nombre técnico interno — para el repositorio de GitHub y para la dirección web final. No lo ves en ningún lado de la plataforma, es "de fábrica". Por ejemplo, con el identificador <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">intro-ia</code> tu página terminaría en una dirección con esta forma: <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">.../plataforma-intro-ia/</code>. Se completa solo a partir del título de arriba — normalmente no hace falta tocarlo.
+    </div>
+    <label class="fld">Tu usuario de GitHub <span class="opt">(para publicar la página web gratis)</span></label>
     <input class="txt mono" value="${p.githubUser.replace(/"/g,'&quot;')}" oninput="setProy('githubUser', this.value)">
+    <div class="hint">
+      <strong>¿Qué es esto y de dónde lo saco?</strong> GitHub es un servicio <strong>gratuito</strong> donde vamos a alojar tu página web terminada (así conseguís una URL pública para compartir). Si nunca lo usaste: entrá a <strong>github.com</strong>, hacé clic en "Sign up" y creá una cuenta gratis (2 minutos) — el nombre de usuario que elijas ahí es lo que va en este campo. Si ya tenés cuenta, tu usuario aparece arriba a la derecha cuando entrás a github.com con tu sesión iniciada.
+    </div>
     <div class="warn" style="margin-top:16px">
       <strong>⚠️ Regla de oro</strong>
       Nunca se modifica una plataforma que ya existe. Cada curso nuevo vive en su propia carpeta nueva.
