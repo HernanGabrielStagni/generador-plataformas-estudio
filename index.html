@@ -771,6 +771,18 @@ const PREF = {
   audios: { pre: (k)=>`A${k+1}-`, ext: '.m4a', icon: '🎧', nombre: 'Audio' }
 };
 
+function pasosGuardarPdf(nombreArchivo) {
+  return `<ol>
+        <li>Debajo de la respuesta de NotebookLM en el chat, hacé clic en el botón <strong>"Guardar en nota"</strong> (ícono de nota/documento que aparece al pasar el mouse sobre la respuesta)</li>
+        <li>Andá a la sección <strong>Studio</strong> (o "Notas") del cuaderno — ahí vas a ver la nota nueva que se acaba de crear</li>
+        <li>Abrí esa nota y hacé clic en <strong>"Exportar"</strong> (o "Enviar a Documentos de Google" / "Copiar a Google Docs", según la versión) — se va a abrir automáticamente un Google Doc con todo el contenido</li>
+        <li>Ya en Google Docs: <em>Archivo → Descargar → Documento PDF</em></li>
+        <li>Guardá ese PDF descargado dentro de la carpeta <code style="background:#eef2ff;padding:1px 4px;border-radius:3px">materiales</code>, con este nombre exacto:</li>
+      </ol>
+      <div class="nombre-archivo">${nombreArchivo}</div>
+      <p class="inst" style="margin-top:10px;margin-bottom:0">Los nombres exactos de los botones ("Guardar en nota", "Exportar") pueden variar un poco según la versión de NotebookLM, pero la secuencia siempre es la misma: guardar la respuesta como nota → abrir la nota → exportarla a Google Docs → descargarla como PDF desde ahí.</p>`;
+}
+
 function darkboxPrefijos(c) {
   return `<div class="darkbox">
       <div class="db-title">⚠️ Leé esto ANTES de descargar cualquier archivo</div>
@@ -1155,14 +1167,7 @@ const STEPS = [
     <div class="step-pdf">
       <h4>Parte 2 — Creá VOS un PDF nuevo con la respuesta de texto</h4>
       <p class="inst" style="margin-bottom:10px">Cuando pegaste el prompt, NotebookLM además de generar los videos/infografías/etc. te va a <strong>responder con texto</strong> en el chat (los datos de la Fase 0, el análisis, y el quiz). Ese texto <strong>no se guarda solo</strong> — vos tenés que convertirlo en un archivo PDF, siguiendo estos pasos:</p>
-      <ol>
-        <li>Seleccioná toda la respuesta de texto de NotebookLM en el chat (Ctrl+A sobre esa respuesta, o selección manual con el mouse)</li>
-        <li>Copiala (Ctrl+C) y pegala en un <strong>Google Doc</strong> o <strong>Word</strong> nuevo, en blanco</li>
-        <li>Desde ahí, exportalo como PDF: <em>Archivo → Descargar → Documento PDF</em></li>
-        <li>Guardá ese PDF (el que acabás de crear, no tu PDF original) en tu computadora con este nombre exacto:</li>
-      </ol>
-      <div class="nombre-archivo">${fasesPdfName()}</div>
-      <p class="inst" style="margin-top:10px;margin-bottom:0">Este archivo nuevo es el que más adelante le vamos a indicar a Claude que lea — por eso importa que se llame exactamente así.</p>
+      ${pasosGuardarPdf(fasesPdfName())}
     </div>
     ${darkboxPrefijos(c)}
     <ul class="ck">
@@ -1196,8 +1201,8 @@ const STEPS = [
     </div>
     <div class="step-pdf">
       <h4>Guardá esta primera respuesta como PDF</h4>
-      <p class="inst" style="margin-bottom:10px">Cuando NotebookLM termine de responder <strong>por completo</strong> (no a medias ni cortada), convertí esa respuesta de texto en un PDF, igual que antes: seleccionala (Ctrl+A), pegala en un Google Doc o Word en blanco, exportala como PDF (<em>Archivo → Descargar → Documento PDF</em>), y guardala con este nombre exacto:</p>
-      <div class="nombre-archivo">${fase1PdfName()}</div>
+      <p class="inst" style="margin-bottom:10px">Cuando NotebookLM termine de responder <strong>por completo</strong> (no a medias ni cortada), convertí esa respuesta de texto en un PDF:</p>
+      ${pasosGuardarPdf(fase1PdfName())}
     </div>
     <ul class="ck">
       ${ckLi('5-p1', `Confirmo que NotebookLM <strong>terminó de responder completo</strong> este primer mensaje y ya guardé el PDF <span class="badge">${fase1PdfName()}</span>`)}
@@ -1218,8 +1223,8 @@ const STEPS = [
     </div>
     <div class="step-pdf">
       <h4>Guardá también esta segunda respuesta como PDF</h4>
-      <p class="inst" style="margin-bottom:10px">Mismo procedimiento que en el primer mensaje, pero con este otro nombre:</p>
-      <div class="nombre-archivo">${fase2PdfName()}</div>
+      <p class="inst" style="margin-bottom:10px">Mismo procedimiento que en el primer mensaje (guardar en nota → exportar → descargar como PDF desde Google Docs), pero con este otro nombre:</p>
+      ${pasosGuardarPdf(fase2PdfName())}
     </div>
     ${darkboxPrefijos(c)}
     <ul class="ck">
