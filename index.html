@@ -1095,9 +1095,9 @@ const STEPS = [
     return `
     <div class="step-head">
       <div class="step-num">5</div>
-      <div><h2>Prompt Maestro → guardá el PDF y esperá el material</h2><div class="step-sub">Un solo mensaje, dispara los ${totalHerr()} entregables</div></div>
+      <div><h2>Prompt Maestro</h2><div class="step-sub">Este paso tiene dos partes: pegar el prompt, y después crear un PDF nuevo con lo que te responda NotebookLM</div></div>
     </div>
-    <p class="inst">Copiá este prompt y pegalo <strong>completo, en un solo mensaje</strong> en el chat de NotebookLM. Está armado con todas tus respuestas.</p>
+    <p class="inst"><strong>Parte 1 —</strong> Copiá este prompt y pegalo <strong>completo, en un solo mensaje</strong> en el chat de NotebookLM. Está armado con todas tus respuestas.</p>
     <div class="pbox">
       <button class="cpbtn" id="cpM" onclick="cp(buildMaestro(),'cpM')">Copiar</button>
       <pre>${esc(buildMaestro())}</pre>
@@ -1107,14 +1107,16 @@ const STEPS = [
       <p>Con <strong>solo pegar este mensaje ya alcanza</strong> — no hace falta escribirle después "dale, generalo". En los próximos minutos deberías ver en el <strong>Panel de Studio</strong> tarjetas nuevas en estado "generando" para los ${totalHerr()} entregables. Si pasan varios minutos y el Panel sigue vacío, es señal de que no arrancó: volvé a pegar el mismo prompt una vez más.</p>
     </div>
     <div class="step-pdf">
-      <h4>Cómo guardar la respuesta de texto como PDF</h4>
+      <h4>Parte 2 — Creá VOS un PDF nuevo con la respuesta de texto</h4>
+      <p class="inst" style="margin-bottom:10px">Cuando pegaste el prompt, NotebookLM además de generar los videos/infografías/etc. te va a <strong>responder con texto</strong> en el chat (los datos de la Fase 0, el análisis, y el quiz). Ese texto <strong>no se guarda solo</strong> — vos tenés que convertirlo en un archivo PDF, siguiendo estos pasos:</p>
       <ol>
-        <li>Seleccioná toda la respuesta de NotebookLM (Ctrl+A en el chat o selección manual)</li>
-        <li>Copiá y pegá en un <strong>Google Doc</strong> o <strong>Word</strong></li>
-        <li>Exportá como PDF: <em>Archivo → Descargar → PDF</em></li>
-        <li>Nombrá el archivo exactamente así:</li>
+        <li>Seleccioná toda la respuesta de texto de NotebookLM en el chat (Ctrl+A sobre esa respuesta, o selección manual con el mouse)</li>
+        <li>Copiala (Ctrl+C) y pegala en un <strong>Google Doc</strong> o <strong>Word</strong> nuevo, en blanco</li>
+        <li>Desde ahí, exportalo como PDF: <em>Archivo → Descargar → Documento PDF</em></li>
+        <li>Guardá ese PDF (el que acabás de crear, no tu PDF original) en tu computadora con este nombre exacto:</li>
       </ol>
       <div class="nombre-archivo">${fasesPdfName()}</div>
+      <p class="inst" style="margin-top:10px;margin-bottom:0">Este archivo nuevo es el que más adelante le vamos a indicar a Claude que lea — por eso importa que se llame exactamente así.</p>
     </div>
     <div class="darkbox">
       <div class="db-title">⚠️ Leé esto ANTES de descargar cualquier archivo</div>
@@ -1127,6 +1129,7 @@ const STEPS = [
     </div>
     <ul class="ck">
       ${ckLi('5-0', `Confirmo que ya vi actividad en el Panel de Studio (tarjetas en "generando") o que reintenté el prompt porque no arrancaba`)}
+      ${ckLi('5-1', `Ya creé y guardé el PDF de la <strong>Parte 2</strong> con el nombre <span class="badge">${fasesPdfName()}</span>`)}
     </ul>
     ${nav()}
   `;},
