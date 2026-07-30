@@ -798,6 +798,15 @@ ${ANALISIS_POR_TIPO[tk].map(x => '• ' + x).join('\n')}`;
   Reporte / guía de estudio exhaustiva con los puntos de la FASE 1.`;
   }
 
+  if (c.v + c.i + c.p > 0) {
+    f3 += `\n\nIMPORTANTE — antes de terminar, escribime en el chat una lista clara indicando
+el ORDEN y TÍTULO exacto de cada video, infografía y presentación que generaste,
+en el mismo orden en que aparecen en el texto (por ejemplo: "Video 1: ...",
+"Video 2: ...", "Infografía 1: ...", etc.). Necesito esa lista para poder
+identificar qué archivo descargado corresponde a cuál — el orden en que los
+generás en el Panel de Studio no siempre coincide con el orden real del texto.`;
+  }
+
   let f4 = null;
   if (m.quiz.incluir) {
     const claveLinea = Array.from({length: m.quiz.cantidad}, (_, k) => `${k+1}:x`).join('  ');
@@ -919,9 +928,11 @@ function pasosGuardarPdf(nombreArchivo) {
 }
 
 function darkboxPrefijos(c) {
+  const hayOrdenables = c.v + c.i + c.p > 0;
   return `<div class="darkbox">
       <div class="db-title">⚠️ Leé esto ANTES de descargar cualquier archivo</div>
       <p>A medida que cada entregable termine de generarse, <strong style="color:#a5b4fc">descargalo en el momento</strong> y al guardar el archivo agregá su prefijo al principio del nombre:</p>
+      ${hayOrdenables ? `<p style="color:#fde68a"><strong>⚠️ No asumas el orden por cómo terminaron de generarse.</strong> El prompt le pidió a NotebookLM que te liste en el chat el título y orden real de cada video/infografía/presentación (según el orden del texto) — buscá esa lista antes de decidir cuál archivo es el "1-", cuál el "2-", etc. Si no te la dio, pedísela directamente: "Decime el orden y título de cada video/infografía/presentación que generaste, según el orden del texto".</p>` : ''}
       ${c.v ? `<div class="pill-row"><span class="pill">Videos</span><span class="mono">1-  2-  … ${c.v}-  (.mp4)</span></div>` : ''}
       ${c.i ? `<div class="pill-row"><span class="pill">Infografías</span><span class="mono">1-  2-  … ${c.i}-  (.png)</span></div>` : ''}
       ${c.p ? `<div class="pill-row"><span class="pill">Presentaciones</span><span class="mono">P1-  … P${c.p}-  (.pdf)</span></div>` : ''}
