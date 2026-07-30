@@ -317,6 +317,7 @@ function defaultState() {
       audios:         [ {objetivo:'', ia:true} ],
       resumenDetallado: true,
       resumenCondensado: false,
+      guiaDividida: false,
       quiz: { incluir:true, cantidad:10 }
     },
     modeloPath: '',
@@ -499,7 +500,7 @@ function cants() {
   const m = state.materiales;
   return { v: m.videos.length, i: m.infografias.length, p: m.presentaciones.length, a: m.audios.length };
 }
-function totalHerr() { const c = cants(); return c.v + c.i + c.p + c.a + 1; }
+function totalHerr() { const c = cants(); return c.v + c.i + c.p + c.a + (state.materiales.guiaDividida ? 2 : 1); }
 function objTxt(item, generico) { return item.ia ? generico : ('"' + item.objetivo.trim() + '"'); }
 function esc(s) { return s.replace(/</g,'&lt;'); }
 
@@ -648,7 +649,7 @@ function maestroPiezas() {
   if (c.i) herrDesc.push(`${c.i} infografía${c.i>1?'s':''}`);
   if (c.p) herrDesc.push(`${c.p} ${c.p>1?'presentaciones':'presentación'}`);
   if (c.a) herrDesc.push(`${c.a} audio${c.a>1?'s':''}`);
-  herrDesc.push('1 informe');
+  herrDesc.push(m.guiaDividida ? '2 informes' : '1 informe');
 
   const intro = `Actuá como ${ROL[tk]} creando material de estudio a partir del texto "${p.titulo}" para la marca ${p.marca}.
 Procesá el texto de forma exhaustiva siguiendo su jerarquía interna real.
@@ -688,13 +689,26 @@ ${pref}_${n}_conceptos: ["...", "...", "...", "..."]`;
   if (c.i) f0 += '\n\nINFOGRAFÍAS:' + bloque('infografias','infografia',m.infografias);
   if (c.p) f0 += '\n\nPRESENTACIONES:' + bloque('presentaciones','presentacion',m.presentaciones);
   if (c.a) f0 += '\n\nAUDIOS:' + bloque('audios','audio',m.audios);
-  f0 += `\n\nDOCUMENTOS:
+  if (m.guiaDividida) {
+    f0 += `\n\nDOCUMENTOS:
+doc_guia1_titulo: "Guía de Estudio Maestra · Parte 1/2 · ${p.titulo}"
+doc_guia1_descripcion: "..."
+doc_guia1_indicaciones: ["...", "...", "...", "..."]
+doc_guia2_titulo: "Guía de Estudio Maestra · Parte 2/2 · ${p.titulo}"
+doc_guia2_descripcion: "..."
+doc_guia2_indicaciones: ["...", "...", "...", "..."]
+doc_fuente_titulo: "Texto fuente original"
+doc_fuente_descripcion: "..."
+doc_fuente_indicaciones: ["...", "...", "...", "..."]`;
+  } else {
+    f0 += `\n\nDOCUMENTOS:
 doc_1_titulo: "Guía de Estudio Maestra · ${p.titulo}"
 doc_1_descripcion: "..."
 doc_1_indicaciones: ["...", "...", "...", "..."]
 doc_2_titulo: "Texto fuente original"
 doc_2_descripcion: "..."
 doc_2_indicaciones: ["...", "...", "...", "..."]`;
+  }
   if (m.resumenDetallado) f0 += `\n\nRESUMEN_GENERAL (detallado):
 intro: "..."
 puntos_clave: ["...", "...", "...", "...", "...", "...", "..."]
@@ -771,8 +785,18 @@ ${ANALISIS_POR_TIPO[tk].map(x => '• ' + x).join('\n')}`;
     m.audios.forEach((it, k) => { f3 += `\n  Audio ${k+1}: ${it.ia ? 'enfoque a tu criterio según la jerarquía del texto' : it.objetivo.trim()}`; });
   }
   idx++;
-  f3 += `\n\n${idx}) GUÍA (herramienta "Informes"):
+  if (m.guiaDividida) {
+    f3 += `\n\n${idx}) GUÍA (herramienta "Informes") × 2 — el texto es extenso, generá DOS
+  informes separados en vez de uno solo:
+  Parte 1/2: cubrí la PRIMERA MITAD de los capítulos/secciones del texto, de forma
+  súper detallada y exhaustiva — desarrollo real de cada concepto con los puntos
+  de la FASE 1, no una simple enumeración.
+  Parte 2/2: cubrí la SEGUNDA MITAD de los capítulos/secciones restantes, con el
+  mismo nivel de detalle y exhaustividad que la Parte 1.`;
+  } else {
+    f3 += `\n\n${idx}) GUÍA (herramienta "Informes"):
   Reporte / guía de estudio exhaustiva con los puntos de la FASE 1.`;
+  }
 
   let f4 = null;
   if (m.quiz.incluir) {
@@ -845,7 +869,8 @@ function darkboxPrefijos(c) {
       ${c.i ? `<div class="pill-row"><span class="pill">Infografías</span><span class="mono">1-  2-  … ${c.i}-  (.png)</span></div>` : ''}
       ${c.p ? `<div class="pill-row"><span class="pill">Presentaciones</span><span class="mono">P1-  … P${c.p}-  (.pdf)</span></div>` : ''}
       ${c.a ? `<div class="pill-row"><span class="pill">Audios</span><span class="mono">A1-  … A${c.a}-  (.m4a)</span></div>` : ''}
-      <p style="margin-top:8px">El informe/guía, los PDF y el logo no llevan prefijo.</p>
+      ${state.materiales.guiaDividida ? `<div class="pill-row"><span class="pill">Guía</span><span class="mono">G1-  G2-  (.pdf)</span></div>` : ''}
+      <p style="margin-top:8px">${state.materiales.guiaDividida ? 'El PDF fuente y el logo no llevan prefijo.' : 'El informe/guía, los PDF y el logo no llevan prefijo.'}</p>
     </div>`;
 }
 
@@ -861,7 +886,12 @@ function buildChecklistDescarga() {
       out += ckLi(`d-${tipo}-${k}`, `${cfg.icon} ${cfg.nombre} ${k+1} <span style="color:#94a3b8">(${obj})</span> — descargado con prefijo <span class="badge">${cfg.pre(k)}</span> <em style="color:#999;font-size:0.78rem">(${cfg.ext})</em>`);
     });
   }
-  out += ckLi('d-guia', `📘 Informe / Guía de estudio — nombre original de NotebookLM (.pdf)`);
+  if (m.guiaDividida) {
+    out += ckLi('d-guia1', `📘 Guía de estudio — Parte 1/2 — descargada con prefijo <span class="badge">G1-</span>`);
+    out += ckLi('d-guia2', `📘 Guía de estudio — Parte 2/2 — descargada con prefijo <span class="badge">G2-</span>`);
+  } else {
+    out += ckLi('d-guia', `📘 Informe / Guía de estudio — nombre original de NotebookLM (.pdf)`);
+  }
   if (necesitaSplit()) {
     out += ckLi('d-fase1', `📋 <span class="badge">${fase1PdfName()}</span> — respuesta de la Parte 1 guardada como PDF (paso anterior)`);
     out += ckLi('d-fase2', `📋 <span class="badge">${fase2PdfName()}</span> — respuesta de la Parte 2 guardada como PDF (paso anterior)`);
@@ -887,7 +917,9 @@ function buildArbol() {
       t += `│   ├── ${cfg.pre(k)}[nombre que ponga NotebookLM]${cfg.ext}\n`;
     });
   }
-  t += `│   ├── [guía de estudio].pdf\n│   ├── [PDF fuente original].pdf\n`;
+  t += m.guiaDividida
+    ? `│   ├── G1-[nombre guía Parte 1/2].pdf\n│   ├── G2-[nombre guía Parte 2/2].pdf\n│   ├── [PDF fuente original].pdf\n`
+    : `│   ├── [guía de estudio].pdf\n│   ├── [PDF fuente original].pdf\n`;
   if (p.logoFile.trim()) t += `│   └── ${p.logoFile.trim()}\n`;
   else t = t.replace(/├── \[PDF fuente original\].pdf\n$/, '└── [PDF fuente original].pdf\n');
   t += `│\n└── <span class="gold">plataforma-${p.slug}\\</span>        ← todavía NO existe — Claude la crea desde cero`;
@@ -900,7 +932,7 @@ function seccionesPlataforma() {
   if (c.v) s.push(`Video Clases (${c.v} video${c.v>1?'s':''} con descripción y conceptos)`);
   if (c.p) s.push(`Presentaciones (${c.p} PDF${c.p>1?'s':''} con visor)`);
   if (c.i) s.push(`Infografías (${c.i} imagen${c.i>1?'es':''} con visor zoom/pan)`);
-  s.push('Documentos (guía de estudio + PDF fuente' + (c.a ? ` + ${c.a} audio${c.a>1?'s':''}` : '') + ')');
+  s.push('Documentos (guía de estudio' + (m.guiaDividida ? ' en 2 partes' : '') + ' + PDF fuente' + (c.a ? ` + ${c.a} audio${c.a>1?'s':''}` : '') + ')');
   if (m.resumenDetallado || m.resumenCondensado) {
     const variantes = [];
     if (m.resumenDetallado) variantes.push('versión detallada');
@@ -943,7 +975,12 @@ Los archivos de medios están en materiales\\ con esta convención de nombres:`;
   if (c.i) msg += `\n- Las ${c.i} infografías (.png) también empiezan con prefijo 1-, 2-, ...`;
   if (c.p) msg += `\n- Las ${c.p} presentaciones (.pdf) empiezan con prefijo P1-, P2-, ...`;
   if (c.a) msg += `\n- Los ${c.a} audios (.m4a o .mp3) empiezan con prefijo A1-, A2-, ...`;
-  msg += `\n- La guía de estudio y el PDF fuente son los PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
+  if (m.guiaDividida) {
+    msg += `\n- La guía de estudio son DOS archivos PDF: uno con prefijo G1- (primera mitad de capítulos, súper detallada) y otro con prefijo G2- (segunda mitad) — son continuación una de la otra, tratalas como un solo documento repartido en dos partes`;
+    msg += `\n- El PDF fuente es el PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
+  } else {
+    msg += `\n- La guía de estudio y el PDF fuente son los PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
+  }
   if (p.logoFile.trim()) msg += `\n- El logo es ${p.logoFile.trim()}`;
   msg += `\n\nListá los archivos de materiales\\, identificá cada uno, y usá sus nombres reales en el código.
 
@@ -1164,6 +1201,8 @@ const STEPS = [
     ${matBlock('audios','Audios (podcast)','🎧',3)}
     <div class="mat-block">
       <h4 style="font-family:sans-serif;font-size:0.92rem;margin-bottom:6px">📝 Resúmenes y evaluación</h4>
+      <label class="tog-row"><input type="checkbox" ${m.guiaDividida?'checked':''} onchange="setMat('guiaDividida', this.checked)"> Texto extenso: dividir la <strong>Guía de estudio</strong> en 2 partes (primera mitad / segunda mitad de capítulos)</label>
+      <div class="hint" style="margin:-2px 0 10px 26px">Recomendado para libros o manuales muy largos — le da a cada mitad más margen para profundizar en vez de resumir todo el texto en un solo documento.</div>
       <label class="tog-row"><input type="checkbox" ${m.resumenDetallado?'checked':''} onchange="setMat('resumenDetallado', this.checked)"> Resumen general <strong>detallado</strong></label>
       <label class="tog-row"><input type="checkbox" ${m.resumenCondensado?'checked':''} onchange="setMat('resumenCondensado', this.checked)"> Resumen <strong>súper condensado y pedagógico</strong> (repaso final)</label>
       <label class="tog-row"><input type="checkbox" ${m.quiz.incluir?'checked':''} onchange="quizTog(this.checked)"> Quiz evaluativo de opción múltiple</label>
