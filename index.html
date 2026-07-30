@@ -639,7 +639,7 @@ function validar(paso) {
 }
 
 // ═══════════════════════════════ GENERADORES ═══════════════════════════════
-const LIMITE_MAESTRO = 4000; // empírico: un prompt de 3864 caracteres arrancó bien en NotebookLM; uno de 6985 no arrancó
+const LIMITE_MAESTRO = 3700; // empírico: NotebookLM acepta hasta ~3750 caracteres; se deja margen de seguridad
 
 function maestroPiezas() {
   const p = state.proyecto, tk = tipoKey(), c = cants(), m = state.materiales;
@@ -820,27 +820,84 @@ function buildMaestroUnico() {
   return [z.intro, z.ejecucion, z.f0, z.f1, z.f2, z.f3, z.f4, z.reglaOro].filter(Boolean).join('\n\n');
 }
 
-function necesitaSplit() { return buildMaestroUnico().length > LIMITE_MAESTRO; }
-
-function buildMaestroParte1() {
+// Bloques indivisibles, en el orden en que deben aparecer en el/los mensaje(s).
+// "entregables" agrupa la orden de ejecución inmediata junto con la FASE 3,
+// porque esa orden tiene que ir pegada justo antes del pedido de las herramientas.
+function maestroBloques() {
   const z = maestroPiezas();
-  const nota = `Este es el PEDIDO 1 DE 2 de este cuaderno (tu contenido es extenso, lo dividimos en
-dos mensajes para que no se sature). Respondé SOLO lo que se pide acá abajo —
-es texto y análisis. NO generes todavía videos, infografías, presentaciones ni
-audio: eso va en un segundo mensaje aparte, una vez que termines de responder
-esto por completo.`;
-  return [z.intro, nota, z.f0, z.f1].filter(Boolean).join('\n\n');
+  const bloques = [
+    { tag: 'intro', txt: z.intro },
+    { tag: 'f0', txt: z.f0 },
+    { tag: 'f1', txt: z.f1 },
+    { tag: 'f2', txt: z.f2 },
+    { tag: 'entregables', txt: [z.ejecucion, z.f3].join('\n\n') },
+  ];
+  if (z.f4) bloques.push({ tag: 'f4', txt: z.f4 });
+  bloques.push({ tag: 'regla', txt: z.reglaOro });
+  return bloques;
 }
 
-function buildMaestroParte2() {
-  const z = maestroPiezas();
-  const nota = `Seguimos con el mismo texto (PEDIDO 2 DE 2 de este cuaderno, continuación
-del pedido anterior — ya tenés el análisis y los datos).`;
-  return [nota, z.ejecucion, z.f2, z.f3, z.f4, z.reglaOro].filter(Boolean).join('\n\n');
+// Cada mensaje lleva además una nota de continuación ("PEDIDO K DE N...") que
+// se agrega DESPUÉS de empaquetar — hay que reservarle presupuesto acá, si no
+// el mensaje final puede terminar pasado el límite aunque el contenido solo no.
+const MARGEN_NOTA = 450;
+
+// Empaqueta los bloques en la menor cantidad de mensajes posible sin superar
+// LIMITE_MAESTRO en ninguno, ya con margen para la nota (cada bloque es
+// indivisible; si un bloque solo ya supera el límite, queda solo en su propio
+// mensaje — caso raro).
+function empaquetarMaestro() {
+  const bloques = maestroBloques();
+  const limiteEfectivo = LIMITE_MAESTRO - MARGEN_NOTA;
+  const partes = [];
+  let actual = [], actualTags = [], actualLen = 0;
+  for (const b of bloques) {
+    const addLen = b.txt.length + (actual.length ? 2 : 0);
+    if (actual.length && actualLen + addLen > limiteEfectivo) {
+      partes.push({ textos: actual, tags: actualTags });
+      actual = [b.txt]; actualTags = [b.tag]; actualLen = b.txt.length;
+    } else {
+      actual.push(b.txt); actualTags.push(b.tag); actualLen += addLen;
+    }
+  }
+  if (actual.length) partes.push({ textos: actual, tags: actualTags });
+  return partes;
 }
 
-function fase1PdfName() { return `${state.proyecto.slug}-Fase1_NotebookLM.pdf`; }
-function fase2PdfName() { return `${state.proyecto.slug}-Fase2_NotebookLM.pdf`; }
+function necesitaSplit() { return empaquetarMaestro().length > 1; }
+
+// Devuelve el texto final de cada mensaje a pegar en NotebookLM, ya con las
+// notas de continuación ("PEDIDO K DE N") insertadas donde corresponde.
+function mensajesMaestro() {
+  const partes = empaquetarMaestro();
+  const N = partes.length;
+  if (N <= 1) return [buildMaestroUnico()];
+  let entregablesYaPasado = false;
+  return partes.map((p, i) => {
+    const esEntregables = p.tags.includes('entregables');
+    let texto;
+    if (i === 0) {
+      const [primero, ...resto] = p.textos;
+      const nota = `Este es el PEDIDO 1 DE ${N} de este cuaderno (tu contenido es extenso, lo
+dividimos en ${N} mensajes para que no se sature). Respondé SOLO lo que se pide
+en este mensaje — NO actives ninguna herramienta de generación todavía, eso
+va a llegar en un mensaje posterior, una vez que termines de responder esto
+por completo.`;
+      texto = [primero, nota, ...resto].join('\n\n');
+    } else {
+      let nota = `Seguimos con el mismo texto (PEDIDO ${i + 1} DE ${N} de este cuaderno,
+continuación del pedido anterior).`;
+      if (!esEntregables && !entregablesYaPasado) {
+        nota += ' Seguí respondiendo solo texto y análisis — todavía no actives ninguna herramienta de generación.';
+      }
+      texto = [nota, ...p.textos].join('\n\n');
+    }
+    if (esEntregables) entregablesYaPasado = true;
+    return texto;
+  });
+}
+
+function faseNPdfName(n) { return `${state.proyecto.slug}-Fase${n}_NotebookLM.pdf`; }
 
 const PREF = {
   videos: { pre: (k)=>`${k+1}-`, ext: '.mp4', icon: '🎬', nombre: 'Video' },
@@ -893,8 +950,9 @@ function buildChecklistDescarga() {
     out += ckLi('d-guia', `📘 Informe / Guía de estudio — nombre original de NotebookLM (.pdf)`);
   }
   if (necesitaSplit()) {
-    out += ckLi('d-fase1', `📋 <span class="badge">${fase1PdfName()}</span> — respuesta de la Parte 1 guardada como PDF (paso anterior)`);
-    out += ckLi('d-fase2', `📋 <span class="badge">${fase2PdfName()}</span> — respuesta de la Parte 2 guardada como PDF (paso anterior)`);
+    mensajesMaestro().forEach((_, i) => {
+      out += ckLi(`d-fase${i+1}`, `📋 <span class="badge">${faseNPdfName(i+1)}</span> — respuesta del mensaje ${i+1} guardada como PDF (paso anterior)`);
+    });
   } else {
     out += ckLi('d-fases', `📋 <span class="badge">${fasesPdfName()}</span> — la respuesta de texto guardada como PDF (paso anterior)`);
   }
@@ -908,7 +966,7 @@ function buildChecklistDescarga() {
 function buildArbol() {
   const p = state.proyecto, m = state.materiales;
   const pdfsLinea = necesitaSplit()
-    ? `│   ├── <span class="gold">${fase1PdfName()}</span>\n│   ├── <span class="gold">${fase2PdfName()}</span>\n`
+    ? mensajesMaestro().map((_, i) => `│   ├── <span class="gold">${faseNPdfName(i+1)}</span>\n`).join('')
     : `│   ├── <span class="gold">${fasesPdfName()}</span>\n`;
   let t = `${p.carpeta}\n│\n├── <span class="gold">materiales\\</span>\n${pdfsLinea}`;
   for (const tipo of ['videos','infografias','presentaciones','audios']) {
@@ -960,14 +1018,13 @@ CONTEXTO DEL PÚBLICO (adaptá los microtextos de la interfaz a este público):
 - Nivel previo: ${NIVELES[state.perfil.nivel]}
 - Tipo de texto fuente: ${tipoLabel()}
 
-${necesitaSplit() ? `El texto fuente era extenso, así que el pedido a NotebookLM se hizo en DOS mensajes
-y por lo tanto hay DOS archivos de fases en materiales\\, no uno solo:
-- ${fase1PdfName()} → contiene la FASE 0 (datos estructurados de inicio${c.v ? `, ${c.v} videos` : ''}${c.i ? `, ${c.i} infografías` : ''}${c.p ? `, ${c.p} presentaciones` : ''}${c.a ? `, ${c.a} audios` : ''}, documentos${m.resumenDetallado || m.resumenCondensado ? ' y resumen/es' : ''}) y la FASE 1 (análisis)
-- ${fase2PdfName()} → contiene la FASE 2 (diseño), FASE 3 (entregables)${m.quiz.incluir ? ` y la FASE 4 (${m.quiz.cantidad} preguntas del quiz con su línea CLAVE al final)` : ''}
-Leé LOS DOS archivos completos antes de escribir el código — cada uno tiene información
-que el otro no tiene, así que tenés que tener en cuenta el contenido de ambos en conjunto
-(no hace falta que los proceses en dos pasos separados; una vez que leíste los dos, generá
-la plataforma completa de una sola vez).` : `El archivo ${fasesPdfName()} está en materiales\\ y contiene la respuesta completa
+${necesitaSplit() ? `El texto fuente era extenso, así que el pedido a NotebookLM se hizo en ${mensajesMaestro().length} mensajes
+y por lo tanto hay ${mensajesMaestro().length} archivos de fases en materiales\\, no uno solo:
+${mensajesMaestro().map((_, i) => `- ${faseNPdfName(i+1)}`).join('\n')}
+Leé TODOS esos archivos completos antes de escribir el código — cada uno puede tener
+información que los otros no tienen, así que tenés que tener en cuenta el contenido de
+todos en conjunto (no hace falta que los proceses por separado; una vez que los leíste
+todos, generá la plataforma completa de una sola vez).` : `El archivo ${fasesPdfName()} está en materiales\\ y contiene la respuesta completa
 de NotebookLM con la FASE 0 (datos estructurados de inicio${c.v ? `, ${c.v} videos` : ''}${c.i ? `, ${c.i} infografías` : ''}${c.p ? `, ${c.p} presentaciones` : ''}${c.a ? `, ${c.a} audios` : ''}, documentos${m.resumenDetallado || m.resumenCondensado ? ' y resumen/es' : ''})${m.quiz.incluir ? ` y las ${m.quiz.cantidad} preguntas del quiz con su línea CLAVE al final` : ''}. Leé ese archivo primero para extraer todos los textos.`}
 
 Los archivos de medios están en materiales\\ con esta convención de nombres:`;
@@ -977,9 +1034,9 @@ Los archivos de medios están en materiales\\ con esta convención de nombres:`;
   if (c.a) msg += `\n- Los ${c.a} audios (.m4a o .mp3) empiezan con prefijo A1-, A2-, ...`;
   if (m.guiaDividida) {
     msg += `\n- La guía de estudio son DOS archivos PDF: uno con prefijo G1- (primera mitad de capítulos, súper detallada) y otro con prefijo G2- (segunda mitad) — son continuación una de la otra, tratalas como un solo documento repartido en dos partes. Estos dos PDF contienen texto real (no son imágenes): abrilos y LEÉ SU CONTENIDO directamente para escribir el título y la descripción que van a mostrarse de cada parte en la sección Documentos — no dependas de lo que diga el PDF de fases sobre la guía, puede no estar actualizado con esta división en dos`;
-    msg += `\n- El PDF fuente es el PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
+    msg += `\n- El PDF fuente es el PDF sin prefijo (junto con ${necesitaSplit() ? mensajesMaestro().map((_, i) => faseNPdfName(i+1)).join(', ') : fasesPdfName()})`;
   } else {
-    msg += `\n- La guía de estudio y el PDF fuente son los PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
+    msg += `\n- La guía de estudio y el PDF fuente son los PDF sin prefijo (junto con ${necesitaSplit() ? mensajesMaestro().map((_, i) => faseNPdfName(i+1)).join(', ') : fasesPdfName()})`;
   }
   if (p.logoFile.trim()) msg += `\n- El logo es ${p.logoFile.trim()}`;
   msg += `\n\nListá los archivos de materiales\\, identificá cada uno, y usá sus nombres reales en el código.
@@ -1281,57 +1338,67 @@ const STEPS = [
 
     // ── Variante dividida: tu contenido genera un prompt demasiado largo ──
     const largoUnico = buildMaestroUnico().length;
+    const partes = empaquetarMaestro();
+    const mensajes = mensajesMaestro();
+    const N = mensajes.length;
+    const LETRA = (i) => String.fromCharCode(97 + i);
+    const tituloParte = (tags) => {
+      const t = [];
+      if (tags.includes('intro') || tags.includes('f0') || tags.includes('f1')) t.push('análisis y datos');
+      if (tags.includes('f2')) t.push('diseño');
+      if (tags.includes('entregables')) t.push('entregables multimedia');
+      if (tags.includes('f4')) t.push('quiz');
+      if (tags.includes('regla')) t.push('cierre');
+      const s = t.length ? t.join(' + ') : 'continuación';
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+
+    let bloques = '';
+    partes.forEach((p, i) => {
+      const esEntregables = p.tags.includes('entregables');
+      const nombreFase = faseNPdfName(i + 1);
+      bloques += `
+    <div class="step-head" style="margin-top:${i===0?'0':'22px'};margin-bottom:8px">
+      <div class="step-num">5${LETRA(i)}</div>
+      <div><h2 style="font-size:1.05rem">Mensaje ${i+1} de ${N} — ${tituloParte(p.tags)}</h2></div>
+    </div>
+    <p class="inst">${i===0 ? 'Copiá este prompt y pegalo <strong>completo, en un solo mensaje</strong> en el chat de NotebookLM.' : `En el <strong>mismo chat</strong> de NotebookLM (es continuación, ya tiene el contexto de ${i===1?'el mensaje anterior':'los mensajes anteriores'}), pegá este prompt:`}</p>
+    <div class="pbox">
+      <button class="cpbtn" id="cpM${i+1}" onclick="cp(mensajesMaestro()[${i}],'cpM${i+1}')">Copiar</button>
+      <pre>${esc(mensajes[i])}</pre>
+    </div>`;
+      if (esEntregables) {
+        bloques += `
+    <div class="hl">
+      <h4>✅ ¿Qué debería pasar apenas lo pegues?</h4>
+      <p>Con <strong>solo pegar este mensaje ya alcanza</strong> — no hace falta escribirle después "dale, generalo". En los próximos minutos deberías ver en el <strong>Panel de Studio</strong> tarjetas nuevas en estado "generando" para los ${totalHerr()} entregables. Si pasan varios minutos y el Panel sigue vacío, es señal de que no arrancó: volvé a pegar este mismo mensaje una vez más.</p>
+    </div>`;
+      }
+      bloques += `
+    <div class="step-pdf">
+      <h4>Guardá esta respuesta como PDF</h4>
+      <p class="inst" style="margin-bottom:10px">Cuando NotebookLM termine de responder <strong>por completo</strong> (no a medias ni cortada), convertí esa respuesta de texto en un PDF:</p>
+      ${pasosGuardarPdf(nombreFase)}
+    </div>`;
+      if (esEntregables) bloques += darkboxPrefijos(c);
+      bloques += `
+    <ul class="ck">
+      ${esEntregables
+        ? ckLi(`5-p${i+1}a`, `Confirmo que ya vi actividad en el Panel de Studio (tarjetas en "generando") o que reintenté este mensaje porque no arrancaba`) + ckLi(`5-p${i+1}b`, `Ya creé y guardé el PDF con el nombre <span class="badge">${nombreFase}</span>`)
+        : ckLi(`5-p${i+1}`, `Confirmo que NotebookLM <strong>terminó de responder completo</strong> este mensaje y ya guardé el PDF <span class="badge">${nombreFase}</span>`)}
+    </ul>`;
+    });
+
     return `
     <div class="step-head">
       <div class="step-num">5</div>
-      <div><h2>Prompt Maestro — dividido en 2 mensajes</h2><div class="step-sub">Tu contenido es extenso: lo separamos para que NotebookLM no se trabe</div></div>
+      <div><h2>Prompt Maestro — dividido en ${N} mensajes</h2><div class="step-sub">Tu contenido es extenso: lo separamos para que NotebookLM no se trabe</div></div>
     </div>
     <div class="warn">
-      <strong>🐢 Por qué esta vez son dos mensajes</strong>
-      Con la cantidad de material que pediste, el prompt completo daría <strong>${largoUnico} caracteres</strong>. Comprobamos que NotebookLM deja de arrancar bien pasados los ~${LIMITE_MAESTRO} caracteres en un solo mensaje — por eso este wizard lo separó solo en 2 partes que vas a pegar una después de la otra, <strong>en el mismo chat</strong>.
+      <strong>🐢 Por qué esta vez son ${N} mensajes</strong>
+      Con la cantidad de material que pediste, el prompt completo daría <strong>${largoUnico} caracteres</strong>. Comprobamos que NotebookLM deja de arrancar bien pasados los ~${LIMITE_MAESTRO} caracteres en un solo mensaje — por eso este wizard lo separó en ${N} partes que vas a pegar una después de la otra, <strong>en el mismo chat</strong>.
     </div>
-
-    <div class="step-head" style="margin-bottom:8px">
-      <div class="step-num">5a</div>
-      <div><h2 style="font-size:1.05rem">Primer mensaje — análisis y datos</h2></div>
-    </div>
-    <p class="inst">Copiá este prompt y pegalo <strong>completo, en un solo mensaje</strong> en el chat de NotebookLM. Es solo texto y análisis — todavía no dispara ningún video ni infografía.</p>
-    <div class="pbox">
-      <button class="cpbtn" id="cpM1" onclick="cp(buildMaestroParte1(),'cpM1')">Copiar</button>
-      <pre>${esc(buildMaestroParte1())}</pre>
-    </div>
-    <div class="step-pdf">
-      <h4>Guardá esta primera respuesta como PDF</h4>
-      <p class="inst" style="margin-bottom:10px">Cuando NotebookLM termine de responder <strong>por completo</strong> (no a medias ni cortada), convertí esa respuesta de texto en un PDF:</p>
-      ${pasosGuardarPdf(fase1PdfName())}
-    </div>
-    <ul class="ck">
-      ${ckLi('5-p1', `Confirmo que NotebookLM <strong>terminó de responder completo</strong> este primer mensaje y ya guardé el PDF <span class="badge">${fase1PdfName()}</span>`)}
-    </ul>
-
-    <div class="step-head" style="margin-top:22px;margin-bottom:8px">
-      <div class="step-num">5b</div>
-      <div><h2 style="font-size:1.05rem">Segundo mensaje — entregables multimedia</h2></div>
-    </div>
-    <p class="inst">En el <strong>mismo chat</strong> de NotebookLM (es continuación, ya tiene el contexto del primer mensaje), pegá este segundo prompt:</p>
-    <div class="pbox">
-      <button class="cpbtn" id="cpM2" onclick="cp(buildMaestroParte2(),'cpM2')">Copiar</button>
-      <pre>${esc(buildMaestroParte2())}</pre>
-    </div>
-    <div class="hl">
-      <h4>✅ ¿Qué debería pasar apenas lo pegues?</h4>
-      <p>Con <strong>solo pegar este mensaje ya alcanza</strong> — no hace falta escribirle después "dale, generalo". En los próximos minutos deberías ver en el <strong>Panel de Studio</strong> tarjetas nuevas en estado "generando" para los ${totalHerr()} entregables. Si pasan varios minutos y el Panel sigue vacío, es señal de que no arrancó: volvé a pegar este mismo segundo mensaje una vez más.</p>
-    </div>
-    <div class="step-pdf">
-      <h4>Guardá también esta segunda respuesta como PDF</h4>
-      <p class="inst" style="margin-bottom:10px">Mismo procedimiento que en el primer mensaje (guardar en nota → exportar → descargar como PDF desde Google Docs), pero con este otro nombre:</p>
-      ${pasosGuardarPdf(fase2PdfName())}
-    </div>
-    ${darkboxPrefijos(c)}
-    <ul class="ck">
-      ${ckLi('5-p2a', `Confirmo que ya vi actividad en el Panel de Studio (tarjetas en "generando") o que reintenté este segundo mensaje porque no arrancaba`)}
-      ${ckLi('5-p2b', `Ya creé y guardé el PDF con el nombre <span class="badge">${fase2PdfName()}</span>`)}
-    </ul>
+    ${bloques}
     ${nav()}
   `;
   },
@@ -1402,7 +1469,7 @@ const STEPS = [
     <div class="hl" style="margin-top:14px">
       <h4>¿Qué hace Claude a partir de aquí?</h4>
       <ul>
-        <li>Lee <strong>${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()}</strong> y extrae los textos${state.materiales.quiz.incluir ? ' y la clave del quiz' : ''}</li>
+        <li>Lee <strong>${necesitaSplit() ? mensajesMaestro().map((_, i) => faseNPdfName(i+1)).join(', ') : fasesPdfName()}</strong> y extrae los textos${state.materiales.quiz.incluir ? ' y la clave del quiz' : ''}</li>
         ${state.modeloPath ? `<li>Lee el código del modelo de referencia (sin tocarlo) y lo replica adaptando marca y contenido</li>` : `<li>Diseña la app desde cero (React + Vite + Tailwind) con tu estética y solo las secciones elegidas</li>`}
         <li>Escribe todas las secciones con el contenido de la Fase 0</li>
         <li>Crea el repositorio en GitHub, publica en GitHub Pages y te entrega la URL final</li>
