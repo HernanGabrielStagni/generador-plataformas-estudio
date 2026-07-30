@@ -976,7 +976,7 @@ Los archivos de medios están en materiales\\ con esta convención de nombres:`;
   if (c.p) msg += `\n- Las ${c.p} presentaciones (.pdf) empiezan con prefijo P1-, P2-, ...`;
   if (c.a) msg += `\n- Los ${c.a} audios (.m4a o .mp3) empiezan con prefijo A1-, A2-, ...`;
   if (m.guiaDividida) {
-    msg += `\n- La guía de estudio son DOS archivos PDF: uno con prefijo G1- (primera mitad de capítulos, súper detallada) y otro con prefijo G2- (segunda mitad) — son continuación una de la otra, tratalas como un solo documento repartido en dos partes`;
+    msg += `\n- La guía de estudio son DOS archivos PDF: uno con prefijo G1- (primera mitad de capítulos, súper detallada) y otro con prefijo G2- (segunda mitad) — son continuación una de la otra, tratalas como un solo documento repartido en dos partes. Estos dos PDF contienen texto real (no son imágenes): abrilos y LEÉ SU CONTENIDO directamente para escribir el título y la descripción que van a mostrarse de cada parte en la sección Documentos — no dependas de lo que diga el PDF de fases sobre la guía, puede no estar actualizado con esta división en dos`;
     msg += `\n- El PDF fuente es el PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
   } else {
     msg += `\n- La guía de estudio y el PDF fuente son los PDF sin prefijo (junto con ${necesitaSplit() ? fase1PdfName() + ' y ' + fase2PdfName() : fasesPdfName()})`;
